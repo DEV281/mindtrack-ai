@@ -4,10 +4,7 @@
   "outputDirectory": "dist",
   "installCommand": "npm ci",
   "rewrites": [
-    { "source": "/sitemap.xml", "destination": "/sitemap.xml" },
-    { "source": "/robots.txt", "destination": "/robots.txt" },
-    { "source": "/googleaf0d232df2470cb8.html", "destination": "/googleaf0d232df2470cb8.html" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/((?!googleaf0d232df2470cb8\\.html|robots\\.txt|sitemap\\.xml|assets/).*)", "destination": "/index.html" }
   ],
   "headers": [
     {
