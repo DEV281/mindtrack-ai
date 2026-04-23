@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [
     react(),
     Sitemap({
-      hostname: 'https://mindtrack-ai.vercel.app',
+      hostname: 'https://mindtrack-ai-eight.vercel.app',
       generateRobotsTxt: true,
       dynamicRoutes: [
         '/',
