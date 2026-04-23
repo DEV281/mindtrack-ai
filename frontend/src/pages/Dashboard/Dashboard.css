@@ -1,0 +1,223 @@
+/* Dashboard-specific calm color overrides */
+.dashboard-calm {
+  --db-bg: #f0f4f8;
+  --db-surface: #ffffff;
+  --db-primary: #5b9bd5;
+  --db-positive: #52b788;
+  --db-neutral: #9d8fcc;
+  --db-warm: #e8a838;
+  --db-text-primary: #2c3e50;
+  --db-text-secondary: #5d7a8a;
+  --db-border: #dde7ef;
+
+  background-color: var(--db-bg) !important;
+  color: var(--db-text-primary);
+  min-height: 100vh;
+  font-family: 'Nunito', system-ui, sans-serif;
+}
+
+.dashboard-calm h1,
+.dashboard-calm h2,
+.dashboard-calm h3,
+.dashboard-calm h4 {
+  font-weight: 700;
+  color: var(--db-text-primary);
+  letter-spacing: -0.3px;
+}
+
+.dashboard-calm p,
+.dashboard-calm span,
+.dashboard-calm td,
+.dashboard-calm th {
+  color: var(--db-text-secondary);
+  font-weight: 400;
+  line-height: 1.8;
+}
+
+.db-card {
+  background: var(--db-surface);
+  border-radius: 20px;
+  border: 1px solid var(--db-border);
+  box-shadow: 0 2px 8px rgba(91,155,213,0.08);
+  padding: 24px;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.db-card:hover {
+  box-shadow: 0 4px 20px rgba(91,155,213,0.12);
+}
+
+/* Greeting section */
+.db-greeting {
+  background: white;
+  border-radius: 20px;
+  padding: 28px 32px;
+  border: 1px solid var(--db-border);
+  border-left: 4px solid var(--db-primary);
+  box-shadow: 0 2px 8px rgba(91,155,213,0.08);
+}
+
+.db-greeting h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--db-text-primary);
+  margin: 0;
+}
+
+.db-greeting .affirmation {
+  font-style: italic;
+  color: var(--db-neutral);
+  font-size: 0.95rem;
+  margin-top: 4px;
+}
+
+.db-greeting .meta {
+  font-size: 0.8rem;
+  color: var(--db-text-secondary);
+  margin-top: 8px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+/* Wellness Score circle */
+.wellness-circle-bg {
+  fill: none;
+  stroke: var(--db-border);
+  stroke-width: 8;
+}
+
+.wellness-circle-fill {
+  fill: none;
+  stroke-width: 8;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1.5s ease-out;
+}
+
+/* Comparison cards horizontal scroll */
+.comparison-cards-row {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scrollbar-width: thin;
+}
+
+.comparison-cards-row::-webkit-scrollbar {
+  height: 4px;
+}
+
+.comparison-cards-row::-webkit-scrollbar-track {
+  background: var(--db-border);
+  border-radius: 4px;
+}
+
+.comparison-cards-row::-webkit-scrollbar-thumb {
+  background: var(--db-primary);
+  border-radius: 4px;
+}
+
+.comparison-card {
+  min-width: 240px;
+  max-width: 280px;
+  flex-shrink: 0;
+  background: var(--db-surface);
+  border-radius: 20px;
+  border: 1px solid var(--db-border);
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(91,155,213,0.06);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.comparison-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 20px rgba(91,155,213,0.12);
+}
+
+/* Session table calm */
+.calm-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.calm-table thead th {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--db-text-secondary);
+  border-bottom: 1px solid var(--db-border);
+}
+
+.calm-table tbody tr {
+  transition: background 0.2s ease;
+}
+
+.calm-table tbody tr:hover {
+  background: var(--bg-raised, #f7f9fc);
+}
+
+.calm-table tbody td {
+  padding: 12px 16px;
+  font-size: 0.85rem;
+  border-bottom: 1px solid #f2f4f8;
+  color: var(--db-text-primary);
+}
+
+.calm-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Mood emojis */
+.mood-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 50px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.mood-calm {
+  background: rgba(82, 183, 136, 0.1);
+  color: #52b788;
+}
+
+.mood-neutral {
+  background: rgba(91, 155, 213, 0.1);
+  color: #5b9bd5;
+}
+
+.mood-tense {
+  background: rgba(232, 168, 56, 0.1);
+  color: #e8a838;
+}
+
+.mood-heavy {
+  background: rgba(157, 143, 204, 0.1);
+  color: #9d8fcc;
+}
+
+/* Trend chart overrides */
+.calm-chart .recharts-cartesian-grid line {
+  stroke: var(--db-border) !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .db-greeting {
+    padding: 20px;
+  }
+
+  .db-greeting h1 {
+    font-size: 1.35rem;
+  }
+
+  .comparison-card {
+    min-width: 200px;
+  }
+}

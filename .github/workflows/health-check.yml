@@ -1,0 +1,19 @@
+name: Health Check
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Every 6 hours
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check backend health
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            https://mindtrack-backend.railway.app/health)
+          if [ $response -ne 200 ]; then
+            echo "Health check failed: $response"
+            exit 1
+          fi
+          echo "Backend healthy: $response"
