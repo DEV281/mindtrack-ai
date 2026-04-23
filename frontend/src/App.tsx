@@ -4,6 +4,9 @@ import { AnimatePresence } from 'framer-motion';
 import useAuthStore from './store/authStore';
 import useThemeStore from './store/themeStore';
 
+// Landing Page
+import LandingPage from './pages/Landing/LandingPage';
+
 // Auth Pages
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
@@ -65,6 +68,16 @@ function App(): React.ReactElement {
   return (
     <AnimatePresence mode="wait">
       <Routes>
+        {/* Landing Page Route */}
+        <Route 
+          path="/" 
+          element={
+            <PublicRoute>
+              <LandingPage />
+            </PublicRoute>
+          } 
+        />
+
         {/* Public Auth Routes */}
         <Route
           path="/login"
@@ -130,9 +143,8 @@ function App(): React.ReactElement {
           <Route path="/settings" element={<Settings />} />
         </Route>
 
-        {/* Default redirect */}
-        <Route path="/" element={<Navigate to="/session" replace />} />
-        <Route path="*" element={<Navigate to="/session" replace />} />
+        {/* Default redirect for unmatched routes */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AnimatePresence>
   );
