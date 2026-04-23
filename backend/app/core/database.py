@@ -9,13 +9,26 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
+# Production-safe engine configuration
+_connect_args = {}
+_db_url = settings.DATABASE_URL
+
+# Supabase pooler requires SSL
+if "supabase.com" in _db_url or "pooler.supabase.com" in _db_url:
+    import ssl
+    ssl_ctx = ssl.create_default_context()
+    ssl_ctx.check_hostname = False
+    ssl_ctx.verify_mode = ssl.CERT_NONE
+    _connect_args["ssl"] = ssl_ctx
+
 engine = create_async_engine(
-    settings.DATABASE_URL,
-    echo=settings.DEBUG,
-    pool_size=20,
-    max_overflow=10,
+    _db_url,
+    echo=False,  # Disable SQL echo in production
+    pool_size=5,  # Conservative for free-tier DBs
+    max_overflow=3,
     pool_pre_ping=True,
     pool_recycle=300,
+    connect_args=_connect_args,
 )
 
 async_session_factory = async_sessionmaker(

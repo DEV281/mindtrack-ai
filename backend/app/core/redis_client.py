@@ -17,11 +17,13 @@ async def get_redis() -> aioredis.Redis:
     """Return the global Redis client instance."""
     global redis_client
     if redis_client is None:
+        redis_url = settings.REDIS_URL
         redis_client = aioredis.from_url(
-            settings.REDIS_URL,
+            redis_url,
             encoding="utf-8",
             decode_responses=True,
-            max_connections=20,
+            max_connections=5,
+            socket_connect_timeout=5,
         )
     return redis_client
 
