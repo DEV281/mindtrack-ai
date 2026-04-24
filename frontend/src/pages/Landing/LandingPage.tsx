@@ -1,271 +1,280 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { 
-  Brain, 
-  Activity, 
-  Video, 
-  Mic, 
-  MessageSquare, 
-  Shield, 
-  ArrowRight,
-  CheckCircle2,
-  ChevronDown
+import { useState } from 'react';
+import {
+  Brain, Activity, Video, Mic, MessageSquare, Shield,
+  ArrowRight, CheckCircle2, ChevronDown, Sparkles,
+  Heart, Lock, BarChart3, Menu, X
 } from 'lucide-react';
 
+/* ── animation helpers ── */
+const fade = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0 } };
+const stagger = { show: { transition: { staggerChildren: 0.12 } } };
+
+/* ── data ── */
+const steps = [
+  { icon: Video, title: 'Facial Expression Analysis', desc: 'On-device micro-expression detection identifies stress and anxiety patterns through your camera — securely and privately.' },
+  { icon: Mic, title: 'Voice Tone Analysis', desc: 'Acoustic AI detects vocal markers of fatigue, depression, and stress without ever storing your audio recordings.' },
+  { icon: Brain, title: 'Contextual AI Engine', desc: 'Our empathetic AI synthesizes visual, vocal, and textual cues to deliver deeply personalised therapeutic support.' },
+];
+
+const features = [
+  { icon: Activity, title: 'Real-Time Tracking', desc: 'Continuous emotional state monitoring during live sessions with instant visual feedback.' },
+  { icon: MessageSquare, title: 'Empathetic AI Chat', desc: 'Converse with an AI trained on psychological frameworks to listen, understand, and support.' },
+  { icon: Lock, title: 'Complete Privacy', desc: 'End-to-end encryption. Zero data selling. You own and control every piece of your data.' },
+  { icon: BarChart3, title: 'Insightful Reports', desc: 'Weekly and monthly analytics reveal trends, triggers, and progress in your mental health journey.' },
+  { icon: Heart, title: 'Mood Journal', desc: 'Daily guided journaling with AI-powered sentiment analysis to track your emotional patterns.' },
+  { icon: Sparkles, title: 'Wellness Activities', desc: 'Breathing exercises, mindfulness games, and gratitude practices curated for your state of mind.' },
+];
+
+const faqs = [
+  { q: 'Is MindTrack AI a replacement for a therapist?', a: 'No. MindTrack AI is a supplemental wellness tool. It provides AI-driven support but is not a substitute for professional medical advice, diagnosis, or treatment.' },
+  { q: 'How does real-time emotion detection work?', a: 'We use on-device processing to analyse facial micro-expressions and vocal intonations during live sessions. Data is processed instantly and never recorded.' },
+  { q: 'Is my video and audio data saved?', a: 'Never. All streams are processed in real-time on your device. No recordings are saved to any server, ensuring complete privacy.' },
+  { q: 'Can MindTrack AI detect stress and anxiety?', a: 'Yes. Our multi-modal AI analyses physiological signals, vocal markers, and text sentiment to identify patterns correlated with stress and anxiety.' },
+  { q: 'Is MindTrack AI free to use?', a: 'Yes, the core platform is completely free. We believe mental health support should be accessible to everyone.' },
+];
+
 export default function LandingPage() {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   return (
-    <div className="min-h-screen bg-bg-primary text-text-primary font-sans selection:bg-accent-primary selection:text-white">
-      {/* Navbar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-bg-primary/80 backdrop-blur-md border-b border-border-primary">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Brain className="w-8 h-8 text-accent-primary" />
-            <span className="text-xl font-bold tracking-tight">MindTrack AI</span>
+    <div className="min-h-screen font-sans" style={{ background: 'var(--bg-base)', color: 'var(--text-primary)' }}>
+
+      {/* ─── Navbar ─── */}
+      <nav className="fixed top-0 inset-x-0 z-50 backdrop-blur-xl border-b" style={{ background: 'rgba(240,244,248,0.85)', borderColor: 'var(--border)' }}>
+        <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--primary), var(--lavender))' }}>
+              <Brain className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-lg font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>MindTrack AI</span>
+          </Link>
+
+          <div className="hidden md:flex items-center gap-8">
+            {['About', 'How it Works', 'Features', 'FAQ'].map(t => (
+              <a key={t} href={`#${t.toLowerCase().replace(/\s+/g, '-')}`} className="text-sm font-medium transition-colors hover:opacity-70" style={{ color: 'var(--text-secondary)' }}>{t}</a>
+            ))}
           </div>
-          <div className="hidden md:flex space-x-8">
-            <a href="#about" className="text-text-secondary hover:text-accent-primary transition-colors">About</a>
-            <a href="#features" className="text-text-secondary hover:text-accent-primary transition-colors">Features</a>
-            <a href="#how-it-works" className="text-text-secondary hover:text-accent-primary transition-colors">How it Works</a>
-            <a href="#faq" className="text-text-secondary hover:text-accent-primary transition-colors">FAQ</a>
+
+          <div className="hidden md:flex items-center gap-3">
+            <Link to="/login" className="text-sm font-semibold px-5 py-2 rounded-pill transition-all hover:opacity-80" style={{ color: 'var(--primary-dark)' }}>Log in</Link>
+            <Link to="/register" className="btn-primary text-sm !py-2 !px-6">Get Started <ArrowRight className="w-4 h-4" /></Link>
           </div>
-          <div className="flex items-center space-x-4">
-            <Link to="/login" className="text-text-secondary hover:text-text-primary transition-colors font-medium">Log in</Link>
-            <Link to="/register" className="bg-accent-primary text-white px-5 py-2 rounded-full font-medium hover:bg-accent-secondary transition-all transform hover:scale-105 shadow-lg shadow-accent-primary/25">Get Started</Link>
-          </div>
+
+          <button className="md:hidden p-2" onClick={() => setMobileOpen(!mobileOpen)} aria-label="Toggle menu">
+            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
         </div>
+
+        {mobileOpen && (
+          <div className="md:hidden px-5 pb-5 flex flex-col gap-3" style={{ background: 'var(--bg-surface)' }}>
+            {['About', 'How it Works', 'Features', 'FAQ'].map(t => (
+              <a key={t} href={`#${t.toLowerCase().replace(/\s+/g, '-')}`} onClick={() => setMobileOpen(false)} className="py-2 text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>{t}</a>
+            ))}
+            <Link to="/login" className="py-2 text-sm font-semibold" style={{ color: 'var(--primary)' }}>Log in</Link>
+            <Link to="/register" className="btn-primary text-sm text-center !py-2.5">Get Started</Link>
+          </div>
+        )}
       </nav>
 
       <main>
-        {/* 1. Hero Section */}
-        <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-accent-primary/20 via-bg-primary to-bg-primary -z-10"></div>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6">
-                Real-Time <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-primary to-purple-500">Mental Health</span> Detection using AI
-              </h1>
-              <p className="text-xl text-text-secondary mb-10 max-w-3xl mx-auto leading-relaxed">
-                Your safe space for wellness. Advanced emotion analysis, stress detection, and personalized AI therapy right from your device.
-              </p>
-              <div className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-6">
-                <Link to="/register" className="bg-accent-primary text-white px-8 py-4 rounded-full text-lg font-semibold flex items-center hover:bg-accent-secondary transition-all transform hover:scale-105 shadow-xl shadow-accent-primary/30 w-full sm:w-auto justify-center">
-                  Start Your Journey <ArrowRight className="ml-2 w-5 h-5" />
+        {/* ─── Hero ─── */}
+        <section className="relative pt-36 pb-24 lg:pt-48 lg:pb-36 overflow-hidden">
+          {/* Decorative blobs */}
+          <div className="absolute top-20 -left-32 w-96 h-96 rounded-full opacity-30 blur-3xl animate-breathe" style={{ background: 'var(--primary-light)' }} />
+          <div className="absolute bottom-10 -right-24 w-80 h-80 rounded-full opacity-20 blur-3xl animate-breathe" style={{ background: 'var(--lavender-light)', animationDelay: '1.5s' }} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-10 blur-3xl" style={{ background: 'var(--primary)' }} />
+
+          <div className="relative max-w-4xl mx-auto px-5 text-center">
+            <motion.div initial="hidden" animate="show" variants={stagger}>
+              <motion.div variants={fade} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide mb-8" style={{ background: 'var(--primary-light)', color: 'var(--primary-dark)' }}>
+                <Sparkles className="w-3.5 h-3.5" /> AI-Powered Mental Wellness
+              </motion.div>
+
+              <motion.h1 variants={fade} className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1] mb-6" style={{ color: 'var(--text-primary)' }}>
+                Your Mind{' '}
+                <span className="gradient-text">Deserves</span>
+                <br />Gentle Care
+              </motion.h1>
+
+              <motion.p variants={fade} className="text-lg sm:text-xl max-w-2xl mx-auto mb-10 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                Advanced emotion analysis, stress detection, and personalised AI therapy — all in a safe, private space designed around your wellbeing.
+              </motion.p>
+
+              <motion.div variants={fade} className="flex flex-col sm:flex-row justify-center gap-4">
+                <Link to="/register" className="btn-primary text-base !py-3.5 !px-8">
+                  Start Your Journey <ArrowRight className="w-5 h-5" />
                 </Link>
-                <a href="#demo" className="px-8 py-4 rounded-full text-lg font-semibold border-2 border-border-primary hover:border-accent-primary hover:text-accent-primary transition-all w-full sm:w-auto text-center bg-bg-secondary/50 backdrop-blur-sm">
-                  See it in Action
+                <a href="#how-it-works" className="btn-ghost text-base !py-3.5 !px-8">
+                  See How it Works
                 </a>
-              </div>
+              </motion.div>
             </motion.div>
           </div>
         </section>
 
-        {/* 2. About MindTrack AI */}
-        <section id="about" className="py-20 bg-bg-secondary/30">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              <motion.div 
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6 }}
-              >
-                <h2 className="text-3xl md:text-4xl font-bold mb-6">About MindTrack AI</h2>
-                <p className="text-lg text-text-secondary mb-6 leading-relaxed">
-                  MindTrack AI is built on the belief that mental health support should be accessible, intelligent, and deeply personal. We leverage cutting-edge artificial intelligence to understand not just what you say, but how you feel.
-                </p>
-                <ul className="space-y-4">
-                  {[
-                    'Privacy-first, secure architecture',
-                    'Empathetic AI trained on psychological principles',
-                    '24/7 availability for whenever you need support'
-                  ].map((item, i) => (
-                    <li key={i} className="flex items-center text-text-primary">
-                      <CheckCircle2 className="w-5 h-5 text-accent-primary mr-3 flex-shrink-0" />
+        {/* ─── About ─── */}
+        <section id="about" className="py-20 lg:py-28">
+          <div className="max-w-6xl mx-auto px-5">
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
+              <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={stagger}>
+                <motion.p variants={fade} className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: 'var(--primary)' }}>About MindTrack AI</motion.p>
+                <motion.h2 variants={fade} className="text-3xl lg:text-4xl font-bold tracking-tight mb-6">Built on empathy,{' '}<span className="gradient-text">powered by AI</span></motion.h2>
+                <motion.p variants={fade} className="text-base leading-relaxed mb-8" style={{ color: 'var(--text-secondary)' }}>
+                  We believe mental health support should be accessible, intelligent, and deeply personal. MindTrack AI leverages cutting-edge artificial intelligence to understand not just what you say, but how you truly feel.
+                </motion.p>
+                <motion.ul variants={stagger} className="space-y-4">
+                  {['Privacy-first, encrypted architecture', 'Empathetic AI trained on psychological frameworks', '24/7 availability — whenever you need support'].map((item, i) => (
+                    <motion.li key={i} variants={fade} className="flex items-center gap-3 text-sm font-medium">
+                      <CheckCircle2 className="w-5 h-5 flex-shrink-0" style={{ color: 'var(--green)' }} />
                       <span>{item}</span>
-                    </li>
+                    </motion.li>
                   ))}
-                </ul>
+                </motion.ul>
               </motion.div>
-              <motion.div 
-                initial={{ opacity: 0, x: 20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6 }}
-                className="relative"
-              >
-                <div className="aspect-square rounded-full bg-gradient-to-tr from-accent-primary/20 to-purple-500/20 absolute -inset-4 blur-3xl -z-10 animate-pulse"></div>
-                <img 
-                  src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=1000&auto=format&fit=crop" 
-                  alt="Peaceful meditation and mental wellness concept" 
-                  className="rounded-2xl shadow-2xl object-cover w-full h-[400px]"
-                  loading="lazy"
-                />
+
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="relative">
+                <div className="absolute -inset-6 rounded-full opacity-20 blur-3xl" style={{ background: 'linear-gradient(135deg, var(--primary-light), var(--lavender-light))' }} />
+                <img src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=1000&auto=format&fit=crop" alt="Peaceful meditation and mental wellness" className="relative rounded-3xl shadow-calm-lg w-full h-[400px] object-cover" loading="lazy" />
               </motion.div>
             </div>
           </div>
         </section>
 
-        {/* 3. How it Works */}
-        <section id="how-it-works" className="py-24">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">How MindTrack AI Works</h2>
-              <p className="text-lg text-text-secondary max-w-2xl mx-auto">Seamless integration of multiple AI models to provide a holistic understanding of your mental state.</p>
-            </div>
-            
-            <div className="grid md:grid-cols-3 gap-8">
-              {[
-                { icon: <Video className="w-8 h-8" />, title: "Facial Expression Analysis", desc: "Real-time emotion detection through secure, local video processing. We identify subtle micro-expressions indicative of stress or anxiety." },
-                { icon: <Mic className="w-8 h-8" />, title: "Voice Tone Analysis", desc: "Advanced acoustic analysis to detect vocal markers of depression, stress, and fatigue without storing your audio." },
-                { icon: <Brain className="w-8 h-8" />, title: "Contextual AI Engine", desc: "Our empathetic AI synthesizes your visual, vocal, and textual inputs to provide personalized therapeutic support and insights." }
-              ].map((step, index) => (
-                <motion.div 
-                  key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: index * 0.2 }}
-                  className="bg-bg-secondary rounded-2xl p-8 border border-border-primary hover:border-accent-primary/50 transition-colors group"
-                >
-                  <div className="w-16 h-16 rounded-xl bg-accent-primary/10 text-accent-primary flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                    {step.icon}
+        {/* ─── How it Works ─── */}
+        <section id="how-it-works" className="py-20 lg:py-28" style={{ background: 'var(--bg-surface)' }}>
+          <div className="max-w-6xl mx-auto px-5">
+            <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={stagger} className="text-center mb-16">
+              <motion.p variants={fade} className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: 'var(--primary)' }}>How it Works</motion.p>
+              <motion.h2 variants={fade} className="text-3xl lg:text-4xl font-bold tracking-tight mb-4">Three layers of{' '}<span className="gradient-text">intelligent care</span></motion.h2>
+              <motion.p variants={fade} className="text-base max-w-xl mx-auto" style={{ color: 'var(--text-secondary)' }}>Multiple AI models work together to build a holistic understanding of your emotional state.</motion.p>
+            </motion.div>
+
+            <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={stagger} className="grid md:grid-cols-3 gap-6">
+              {steps.map((s, i) => (
+                <motion.div key={i} variants={fade} className="glass-card-hover p-8 text-center">
+                  <div className="w-14 h-14 rounded-2xl mx-auto mb-6 flex items-center justify-center" style={{ background: 'var(--primary-light)', color: 'var(--primary)' }}>
+                    <s.icon className="w-6 h-6" />
                   </div>
-                  <h3 className="text-xl font-bold mb-3">{step.title}</h3>
-                  <p className="text-text-secondary leading-relaxed">{step.desc}</p>
+                  <h3 className="text-lg font-bold mb-3">{s.title}</h3>
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{s.desc}</p>
                 </motion.div>
               ))}
-            </div>
+            </motion.div>
           </div>
         </section>
 
-        {/* 4. Features */}
-        <section id="features" className="py-24 bg-bg-secondary/30">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Powerful Features for Your Mind</h2>
-              <p className="text-lg text-text-secondary max-w-2xl mx-auto">Everything you need to track, understand, and improve your mental wellbeing in one secure platform.</p>
-            </div>
+        {/* ─── Features ─── */}
+        <section id="features" className="py-20 lg:py-28">
+          <div className="max-w-6xl mx-auto px-5">
+            <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={stagger} className="text-center mb-16">
+              <motion.p variants={fade} className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: 'var(--primary)' }}>Features</motion.p>
+              <motion.h2 variants={fade} className="text-3xl lg:text-4xl font-bold tracking-tight mb-4">Everything your mind{' '}<span className="gradient-text">needs</span></motion.h2>
+              <motion.p variants={fade} className="text-base max-w-xl mx-auto" style={{ color: 'var(--text-secondary)' }}>A complete toolkit to track, understand, and nurture your mental wellbeing.</motion.p>
+            </motion.div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[
-                { icon: <Activity />, title: "Real-Time Tracking", desc: "Monitor your emotional state continuously during sessions." },
-                { icon: <MessageSquare />, title: "Empathetic AI Chat", desc: "Converse with an AI trained to listen and support." },
-                { icon: <Shield />, title: "100% Private", desc: "Your data is encrypted and never sold. You're in control." },
-                { icon: <Brain />, title: "Insightful Reports", desc: "Get actionable insights based on your historical data." }
-              ].map((feature, idx) => (
-                <div key={idx} className="p-6 rounded-2xl bg-bg-primary border border-border-primary shadow-sm hover:shadow-md transition-shadow">
-                  <div className="text-accent-primary mb-4">{feature.icon}</div>
-                  <h3 className="text-lg font-bold mb-2">{feature.title}</h3>
-                  <p className="text-sm text-text-secondary">{feature.desc}</p>
-                </div>
+            <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={stagger} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {features.map((f, i) => (
+                <motion.div key={i} variants={fade} className="glass-card-hover p-7">
+                  <div className="w-11 h-11 rounded-xl mb-5 flex items-center justify-center" style={{ background: 'var(--primary-light)', color: 'var(--primary)' }}>
+                    <f.icon className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-base font-bold mb-2">{f.title}</h3>
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{f.desc}</p>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           </div>
         </section>
 
-        {/* 5. Demo / Screenshots */}
-        <section id="demo" className="py-24 overflow-hidden">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-16">Experience the Dashboard</h2>
-            <motion.div 
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
-              className="relative mx-auto max-w-5xl"
-            >
-              <div className="absolute inset-0 bg-gradient-to-t from-bg-primary via-transparent to-transparent z-10 h-full w-full pointer-events-none rounded-2xl"></div>
-              <div className="rounded-2xl border border-border-primary overflow-hidden shadow-2xl bg-bg-secondary p-2">
-                <img 
-                  src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2000&auto=format&fit=crop" 
-                  alt="MindTrack AI Dashboard Interface showing mental health analytics" 
-                  className="rounded-xl w-full object-cover shadow-inner opacity-90 hover:opacity-100 transition-opacity"
-                  loading="lazy"
-                />
+        {/* ─── Demo ─── */}
+        <section id="demo" className="py-20 lg:py-28" style={{ background: 'var(--bg-surface)' }}>
+          <div className="max-w-5xl mx-auto px-5 text-center">
+            <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={stagger}>
+              <motion.p variants={fade} className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: 'var(--primary)' }}>Preview</motion.p>
+              <motion.h2 variants={fade} className="text-3xl lg:text-4xl font-bold tracking-tight mb-12">Experience the{' '}<span className="gradient-text">dashboard</span></motion.h2>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }} className="relative">
+              <div className="absolute inset-0 rounded-3xl bg-gradient-to-t from-[var(--bg-surface)] via-transparent to-transparent z-10 pointer-events-none" />
+              <div className="glass-card p-2 sm:p-3">
+                <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2000&auto=format&fit=crop" alt="MindTrack AI Dashboard showing mental health analytics and emotion tracking" className="rounded-2xl w-full object-cover opacity-90 hover:opacity-100 transition-opacity duration-500" loading="lazy" />
               </div>
             </motion.div>
           </div>
         </section>
 
-        {/* 6. FAQ Section */}
-        <section id="faq" className="py-24 bg-bg-secondary/30">
-          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Frequently Asked Questions</h2>
-              <p className="text-lg text-text-secondary">Find answers to common questions about MindTrack AI and mental health detection.</p>
-            </div>
+        {/* ─── FAQ ─── */}
+        <section id="faq" className="py-20 lg:py-28">
+          <div className="max-w-2xl mx-auto px-5">
+            <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={stagger} className="text-center mb-12">
+              <motion.p variants={fade} className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: 'var(--primary)' }}>FAQ</motion.p>
+              <motion.h2 variants={fade} className="text-3xl font-bold tracking-tight mb-4">Common{' '}<span className="gradient-text">questions</span></motion.h2>
+            </motion.div>
 
-            <div className="space-y-4">
-              {[
-                { q: "Is MindTrack AI a replacement for a human therapist?", a: "No, MindTrack AI is designed to be a supplemental tool for mental wellness. While it provides advanced real-time emotion detection and AI-driven support, it is not a substitute for professional medical advice, diagnosis, or treatment." },
-                { q: "How does the real-time emotion detection work?", a: "We use on-device processing to analyze facial micro-expressions and vocal intonations via your camera and microphone during live sessions. This data is processed instantly to guide the AI's empathetic responses." },
-                { q: "Is my video and audio data recorded or saved?", a: "Absolutely not. We process video and audio streams entirely in real-time. No recordings are ever saved to our servers or databases, ensuring complete privacy." },
-                { q: "Can MindTrack AI detect stress and anxiety?", a: "Yes, our multi-modal AI analyzes physiological signals, vocal markers, and text sentiment to identify patterns highly correlated with stress and anxiety." }
-              ].map((faq, idx) => (
-                <details key={idx} className="group bg-bg-primary border border-border-primary rounded-xl overflow-hidden [&_summary::-webkit-details-marker]:hidden">
-                  <summary className="flex items-center justify-between p-6 cursor-pointer font-medium text-lg">
-                    {faq.q}
-                    <ChevronDown className="w-5 h-5 text-text-secondary group-open:rotate-180 transition-transform" />
+            <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={stagger} className="space-y-3">
+              {faqs.map((f, i) => (
+                <motion.details key={i} variants={fade} className="group glass-card overflow-hidden [&_summary::-webkit-details-marker]:hidden">
+                  <summary className="flex items-center justify-between p-5 cursor-pointer text-sm font-semibold select-none">
+                    {f.q}
+                    <ChevronDown className="w-4 h-4 flex-shrink-0 ml-4 transition-transform group-open:rotate-180" style={{ color: 'var(--text-muted)' }} />
                   </summary>
-                  <div className="px-6 pb-6 text-text-secondary leading-relaxed border-t border-border-primary/50 pt-4 mt-2">
-                    {faq.a}
-                  </div>
-                </details>
+                  <div className="px-5 pb-5 text-sm leading-relaxed -mt-1" style={{ color: 'var(--text-secondary)' }}>{f.a}</div>
+                </motion.details>
               ))}
-            </div>
+            </motion.div>
           </div>
         </section>
 
-        {/* CTA Section */}
-        <section className="py-24">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 className="text-4xl font-bold mb-6">Ready to prioritize your mental wellbeing?</h2>
-            <p className="text-xl text-text-secondary mb-10">Join thousands of users finding their safe space with MindTrack AI.</p>
-            <Link to="/register" className="bg-accent-primary text-white px-10 py-4 rounded-full text-xl font-bold hover:bg-accent-secondary transition-all transform hover:scale-105 shadow-2xl shadow-accent-primary/40 inline-block">
-              Create Your Free Account
-            </Link>
+        {/* ─── CTA ─── */}
+        <section className="py-20 lg:py-28" style={{ background: 'var(--bg-surface)' }}>
+          <div className="max-w-3xl mx-auto px-5 text-center">
+            <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={stagger}>
+              <motion.h2 variants={fade} className="text-3xl lg:text-4xl font-bold tracking-tight mb-5">Ready to prioritise your{' '}<span className="gradient-text">wellbeing</span>?</motion.h2>
+              <motion.p variants={fade} className="text-base mb-10" style={{ color: 'var(--text-secondary)' }}>Join people finding their safe space with MindTrack AI. It's free, private, and always here for you.</motion.p>
+              <motion.div variants={fade}>
+                <Link to="/register" className="btn-primary text-lg !py-4 !px-10">Create Your Free Account</Link>
+              </motion.div>
+            </motion.div>
           </div>
         </section>
       </main>
 
-      {/* 7. Footer */}
-      <footer className="bg-bg-secondary border-t border-border-primary py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center space-x-2 mb-4">
-                <Brain className="w-6 h-6 text-accent-primary" />
-                <span className="text-xl font-bold tracking-tight">MindTrack AI</span>
+      {/* ─── Footer ─── */}
+      <footer className="border-t py-12" style={{ borderColor: 'var(--border)', background: 'var(--bg-base)' }}>
+        <div className="max-w-6xl mx-auto px-5">
+          <div className="grid md:grid-cols-4 gap-8 mb-10">
+            <div className="md:col-span-2">
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--primary), var(--lavender))' }}>
+                  <Brain className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-base font-bold tracking-tight">MindTrack AI</span>
               </div>
-              <p className="text-text-secondary max-w-sm mb-4">
-                Advanced real-time mental health detection and personalized AI therapy. Your safe space for wellness.
+              <p className="text-sm max-w-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                Real-time mental health detection and personalised AI therapy. Your safe space for wellness.
               </p>
             </div>
             <div>
-              <h4 className="font-bold mb-4">Product</h4>
-              <ul className="space-y-2 text-text-secondary">
-                <li><a href="#features" className="hover:text-accent-primary transition-colors">Features</a></li>
-                <li><a href="#how-it-works" className="hover:text-accent-primary transition-colors">How it Works</a></li>
-                <li><Link to="/login" className="hover:text-accent-primary transition-colors">Log In</Link></li>
+              <h4 className="text-xs font-bold tracking-widest uppercase mb-4" style={{ color: 'var(--text-muted)' }}>Product</h4>
+              <ul className="space-y-2.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                <li><a href="#features" className="hover:opacity-70 transition-opacity">Features</a></li>
+                <li><a href="#how-it-works" className="hover:opacity-70 transition-opacity">How it Works</a></li>
+                <li><Link to="/login" className="hover:opacity-70 transition-opacity">Log In</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-bold mb-4">Legal</h4>
-              <ul className="space-y-2 text-text-secondary">
-                <li><Link to="/privacy" className="hover:text-accent-primary transition-colors">Privacy Policy</Link></li>
-                <li><Link to="/terms" className="hover:text-accent-primary transition-colors">Terms of Service</Link></li>
-                <li><a href="mailto:support@mindtrack-ai.com" className="hover:text-accent-primary transition-colors">Contact Support</a></li>
+              <h4 className="text-xs font-bold tracking-widest uppercase mb-4" style={{ color: 'var(--text-muted)' }}>Legal</h4>
+              <ul className="space-y-2.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                <li><Link to="/privacy" className="hover:opacity-70 transition-opacity">Privacy Policy</Link></li>
+                <li><Link to="/terms" className="hover:opacity-70 transition-opacity">Terms of Service</Link></li>
+                <li><a href="mailto:support@mindtrack-ai.com" className="hover:opacity-70 transition-opacity">Contact</a></li>
               </ul>
             </div>
           </div>
-          <div className="border-t border-border-primary pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-text-secondary">
+          <div className="border-t pt-8 flex flex-col md:flex-row justify-between items-center text-xs" style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
             <p>&copy; {new Date().getFullYear()} MindTrack AI. All rights reserved.</p>
-            <p className="mt-2 md:mt-0">Designed with empathy.</p>
+            <p className="mt-2 md:mt-0">Designed with empathy ♡</p>
           </div>
         </div>
       </footer>
