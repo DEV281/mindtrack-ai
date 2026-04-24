@@ -114,6 +114,8 @@ async def health_check() -> dict:
         "service": "MindTrack AI",
         "groq": "configured" if os.environ.get("GROQ_API_KEY") else "missing",
         "db": "configured" if os.environ.get("DATABASE_URL") else "missing",
+        "smtp": "configured" if (os.environ.get("SMTP_USER") and os.environ.get("SMTP_PASSWORD")) else "missing",
+        "redis": "configured" if os.environ.get("REDIS_URL") else "default",
     }
 
 

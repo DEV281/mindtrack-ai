@@ -94,8 +94,13 @@ function OTPVerify(): React.ReactElement {
     setError(null);
     try {
       const { default: api } = await import('../../api/client');
-      await api.post('/auth/resend-otp', { email: pendingEmail });
-      toast.success('New verification code sent!');
+      const response = await api.post('/auth/resend-otp', { email: pendingEmail });
+      if (response.data.email_sent === false) {
+        toast.error('OTP generated but email failed to send. Check SMTP configuration on the server.');
+        setError('Email service is unavailable. If running locally, check the backend terminal for the OTP code.');
+      } else {
+        toast.success('New verification code sent!');
+      }
       setCountdown(30);
       setCanResend(false);
       setOtp(Array(6).fill(''));

@@ -37,6 +37,7 @@ class AuthResponse(BaseModel):
     message: str
     email: Optional[str] = None
     requires_otp: bool = False
+    email_sent: bool = True
 
 
 class TokenResponse(BaseModel):

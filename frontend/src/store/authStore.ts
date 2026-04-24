@@ -118,7 +118,11 @@ const useAuthStore = create<AuthState>((set, get) => ({
         requiresOtp: true,
         isLoading: false,
       });
-      toast.success(response.data.message || 'Registration successful. Check your email for OTP.');
+      if (response.data.email_sent === false) {
+        toast.error('Account created but OTP email failed to send. Use "Resend Code" on the next screen.');
+      } else {
+        toast.success(response.data.message || 'Registration successful. Check your email for OTP.');
+      }
     } catch (error) {
       set({ isLoading: false });
       const msg =

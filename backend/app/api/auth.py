@@ -102,12 +102,20 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)) ->
         logger.info(f"[DEV] OTP for {body.email}: {otp}")
 
     # Send OTP via email
+    email_sent = False
     try:
         await _send_otp_email(body.email, otp)
+        email_sent = True
     except Exception as e:
         logger.error(f"Failed to send OTP email to {body.email}: {e}", exc_info=True)
 
-    return AuthResponse(message="Registration successful. Please verify your email with the OTP sent.", email=body.email, requires_otp=True)
+    return AuthResponse(
+        message="Registration successful. Please verify your email with the OTP sent." if email_sent
+               else "Registration successful. OTP email could not be sent — please use Resend Code.",
+        email=body.email,
+        requires_otp=True,
+        email_sent=email_sent,
+    )
 
 
 @router.post("/verify-otp", response_model=TokenResponse)
@@ -184,6 +192,7 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
         await _send_otp_email(body.email, otp)
     except Exception as e:
         logger.error(f"Failed to send login OTP email to {body.email}: {e}", exc_info=True)
+        return AuthResponse(message="OTP generated but email could not be sent. Please use Resend Code.", email=body.email, requires_otp=True, email_sent=False)
 
     return AuthResponse(message="OTP sent to your email", email=body.email, requires_otp=True)
 
@@ -205,11 +214,17 @@ async def resend_otp(body: _ResendOtpBody) -> dict:
         logger.warning(f"Redis unavailable during resend: {e}")
     if settings.DEBUG:
         logger.info(f"[DEV] Resend OTP for {body.email}: {otp}")
+    email_sent = False
     try:
         await _send_otp_email(body.email, otp)
+        email_sent = True
     except Exception as e:
         logger.error(f"Failed to resend OTP to {body.email}: {e}")
-    return {"message": "OTP resent", "email": body.email}
+    return {
+        "message": "OTP resent" if email_sent else "OTP generated but email failed to send. Check SMTP configuration.",
+        "email": body.email,
+        "email_sent": email_sent,
+    }
 
 
 @router.post("/refresh", response_model=TokenResponse)
