@@ -6,7 +6,6 @@ import useAuthStore from '../../store/authStore';
 import toast from 'react-hot-toast';
 import TermsModal from './TermsModal';
 import PrivacyPolicy from './PrivacyPolicy';
-import api from '../../api/client';
 
 interface FormData {
   name: string;
@@ -90,12 +89,7 @@ function Register(): React.ReactElement {
         institution: form.institution,
         password: form.password,
       });
-      // Record T&C acceptance
-      try {
-        await api.post('/users/me/tnc-accept', { accepted: true });
-      } catch {
-        // Non-critical, user may not be authenticated yet
-      }
+      toast.success('Account created! Please verify with the OTP sent to your email.');
       navigate('/verify-otp');
     } catch (error) {
       // Error is also handled in store but we ensure the user sees something

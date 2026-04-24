@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, KeyboardEvent, ClipboardEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Brain, ShieldCheck, RotateCcw } from 'lucide-react';
+import { Brain, ShieldCheck, RotateCcw, AlertCircle } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
+import toast from 'react-hot-toast';
 
 function OTPVerify(): React.ReactElement {
   const navigate = useNavigate();
@@ -11,6 +12,8 @@ function OTPVerify(): React.ReactElement {
   const [otp, setOtp] = useState<string[]>(Array(6).fill(''));
   const [countdown, setCountdown] = useState(30);
   const [canResend, setCanResend] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isResending, setIsResending] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Countdown timer
@@ -27,8 +30,10 @@ function OTPVerify(): React.ReactElement {
 
   // Auto-focus first input
   useEffect(() => {
-    inputRefs.current[0]?.focus();
-  }, []);
+    if (pendingEmail) {
+      inputRefs.current[0]?.focus();
+    }
+  }, [pendingEmail]);
 
   const handleChange = (index: number, value: string): void => {
     if (!/^\d*$/.test(value)) return;
@@ -36,6 +41,7 @@ function OTPVerify(): React.ReactElement {
     const newOtp = [...otp];
     newOtp[index] = value.slice(-1);
     setOtp(newOtp);
+    setError(null);
 
     // Auto-focus next input
     if (value && index < 5) {
@@ -70,27 +76,64 @@ function OTPVerify(): React.ReactElement {
 
   const handleVerify = async (code: string): Promise<void> => {
     if (!pendingEmail) return;
+    setError(null);
     try {
       await verifyOtp(pendingEmail, code);
       navigate('/dashboard');
-    } catch {
+    } catch (err) {
+      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      setError(detail || 'Invalid or expired OTP. Please try again.');
       setOtp(Array(6).fill(''));
       inputRefs.current[0]?.focus();
     }
   };
 
-  const handleResend = (): void => {
-    setCountdown(30);
-    setCanResend(false);
-    // Trigger resend via API
-    import('../../api/client').then(({ default: api }) => {
-      api.post('/auth/resend-otp', { email: pendingEmail });
-    });
+  const handleResend = async (): Promise<void> => {
+    if (!pendingEmail) return;
+    setIsResending(true);
+    setError(null);
+    try {
+      const { default: api } = await import('../../api/client');
+      await api.post('/auth/resend-otp', { email: pendingEmail });
+      toast.success('New verification code sent!');
+      setCountdown(30);
+      setCanResend(false);
+      setOtp(Array(6).fill(''));
+      inputRefs.current[0]?.focus();
+    } catch {
+      toast.error('Failed to resend code. Please try again.');
+    } finally {
+      setIsResending(false);
+    }
   };
 
+  // If no pendingEmail, show a helpful message instead of instant redirect
   if (!pendingEmail) {
-    navigate('/login');
-    return <></>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-bg-primary bg-noise p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md text-center"
+        >
+          <div className="glass-card p-8">
+            <AlertCircle className="w-12 h-12 text-accent-amber mx-auto mb-4" />
+            <h2 className="text-xl font-bold mb-2">Session Expired</h2>
+            <p className="text-text-secondary text-sm mb-6">
+              Your verification session has expired. Please register or log in again.
+            </p>
+            <div className="flex gap-3">
+              <Link to="/register" className="btn-primary flex-1">
+                Register
+              </Link>
+              <Link to="/login" className="btn-secondary flex-1">
+                Log In
+              </Link>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    );
   }
 
   return (
@@ -120,6 +163,19 @@ function OTPVerify(): React.ReactElement {
 
         {/* OTP Card */}
         <div className="glass-card p-8">
+          {/* Error message */}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 p-3 rounded-xl border flex items-center gap-2"
+              style={{ background: 'rgba(239, 68, 68, 0.08)', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+            >
+              <AlertCircle className="w-4 h-4 text-accent-red flex-shrink-0" />
+              <p className="text-xs text-accent-red">{error}</p>
+            </motion.div>
+          )}
+
           {/* OTP Inputs */}
           <div className="flex justify-center gap-3 mb-8">
             {otp.map((digit, index) => (
@@ -140,9 +196,11 @@ function OTPVerify(): React.ReactElement {
                   bg-bg-secondary border rounded-xl 
                   focus:outline-none focus:ring-2 transition-all duration-200
                   ${
-                    digit
-                      ? 'border-accent-green/50 focus:ring-accent-green/20 text-accent-green'
-                      : 'border-border focus:ring-accent-cyan/20 text-text-primary'
+                    error
+                      ? 'border-accent-red/50 focus:ring-accent-red/20'
+                      : digit
+                        ? 'border-accent-green/50 focus:ring-accent-green/20 text-accent-green'
+                        : 'border-border focus:ring-accent-cyan/20 text-text-primary'
                   }`}
               />
             ))}
@@ -169,10 +227,11 @@ function OTPVerify(): React.ReactElement {
             {canResend ? (
               <button
                 onClick={handleResend}
-                className="inline-flex items-center gap-2 text-sm text-accent-green hover:underline font-medium"
+                disabled={isResending}
+                className="inline-flex items-center gap-2 text-sm text-accent-green hover:underline font-medium disabled:opacity-50"
               >
-                <RotateCcw className="w-3.5 h-3.5" />
-                Resend Code
+                <RotateCcw className={`w-3.5 h-3.5 ${isResending ? 'animate-spin' : ''}`} />
+                {isResending ? 'Sending...' : 'Resend Code'}
               </button>
             ) : (
               <p className="text-sm text-text-muted">

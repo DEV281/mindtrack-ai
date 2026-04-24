@@ -107,7 +107,7 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)) ->
     except Exception as e:
         logger.error(f"Failed to send OTP email to {body.email}: {e}", exc_info=True)
 
-    return AuthResponse(message="Registration successful. Please verify your email with the OTP sent.", email=body.email)
+    return AuthResponse(message="Registration successful. Please verify your email with the OTP sent.", email=body.email, requires_otp=True)
 
 
 @router.post("/verify-otp", response_model=TokenResponse)
@@ -124,7 +124,7 @@ async def verify_otp_endpoint(body: OTPVerifyRequest, db: AsyncSession = Depends
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     user.is_verified = True
-    await db.flush()
+    await db.commit()
 
     access_token = create_access_token({"sub": user.id, "email": user.email})
     refresh_token = create_refresh_token({"sub": user.id})

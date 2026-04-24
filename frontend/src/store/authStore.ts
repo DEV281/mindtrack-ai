@@ -54,18 +54,42 @@ interface RegisterData {
   institution: string;
 }
 
+// Helper to persist/restore pendingEmail across page reloads
+const PENDING_EMAIL_KEY = 'mindtrack_pending_email';
+
+const getStoredPendingEmail = (): string | null => {
+  try {
+    return sessionStorage.getItem(PENDING_EMAIL_KEY);
+  } catch {
+    return null;
+  }
+};
+
+const setStoredPendingEmail = (email: string | null): void => {
+  try {
+    if (email) {
+      sessionStorage.setItem(PENDING_EMAIL_KEY, email);
+    } else {
+      sessionStorage.removeItem(PENDING_EMAIL_KEY);
+    }
+  } catch {
+    // sessionStorage unavailable
+  }
+};
+
 const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isAuthenticated: false,
   isLoading: false,
-  pendingEmail: null,
-  requiresOtp: false,
+  pendingEmail: getStoredPendingEmail(),
+  requiresOtp: !!getStoredPendingEmail(),
 
   login: async (email: string, password: string) => {
     set({ isLoading: true });
     try {
       const { data } = await api.post('/auth/login', { email, password });
       if (data.requires_otp) {
+        setStoredPendingEmail(email);
         set({ pendingEmail: email, requiresOtp: true, isLoading: false });
         toast.success('OTP sent to your email');
       } else {
@@ -88,6 +112,7 @@ const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true });
     try {
       const response = await api.post('/auth/register', data);
+      setStoredPendingEmail(data.email);
       set({
         pendingEmail: data.email,
         requiresOtp: true,
@@ -110,6 +135,7 @@ const useAuthStore = create<AuthState>((set, get) => ({
       const { data } = await api.post('/auth/verify-otp', { email, otp });
       setAccessToken(data.access_token);
       if (data.refresh_token) setRefreshToken(data.refresh_token);
+      setStoredPendingEmail(null);
       set({
         isAuthenticated: true,
         requiresOtp: false,
@@ -135,6 +161,7 @@ const useAuthStore = create<AuthState>((set, get) => ({
       // Ignore logout errors
     }
     setAccessToken(null);
+    setStoredPendingEmail(null);
     set({
       user: null,
       isAuthenticated: false,
@@ -201,14 +228,16 @@ const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   setUser: (user: User) => set({ user }),
-  reset: () =>
+  reset: () => {
+    setStoredPendingEmail(null);
     set({
       user: null,
       isAuthenticated: false,
       isLoading: false,
       pendingEmail: null,
       requiresOtp: false,
-    }),
+    });
+  },
 }));
 
 export default useAuthStore;
