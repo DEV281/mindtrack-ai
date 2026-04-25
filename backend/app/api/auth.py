@@ -539,14 +539,18 @@ async def _send_otp_email(email: str, otp: str) -> None:
 
     logger.info(f"Sending OTP email to {email} via {settings.SMTP_HOST}:{settings.SMTP_PORT}")
 
+    # Port 465 = implicit SSL (use_tls), port 587 = STARTTLS
+    use_ssl = int(settings.SMTP_PORT) == 465
     await aiosmtplib.send(
         msg,
         hostname=settings.SMTP_HOST,
-        port=settings.SMTP_PORT,
+        port=int(settings.SMTP_PORT),
         username=settings.SMTP_USER,
         password=settings.SMTP_PASSWORD,
-        start_tls=True,
+        use_tls=use_ssl,
+        start_tls=not use_ssl,
         tls_context=tls_context,
+        timeout=30,
     )
     logger.info(f"OTP email sent successfully to {email}")
 
@@ -593,14 +597,19 @@ async def _send_reset_email(email: str, otp: str) -> None:
     msg.attach(MIMEText(html_body, "html"))
 
     logger.info(f"Sending password-reset OTP email to {email}")
+
+    # Port 465 = implicit SSL (use_tls), port 587 = STARTTLS
+    use_ssl = int(settings.SMTP_PORT) == 465
     await aiosmtplib.send(
         msg,
         hostname=settings.SMTP_HOST,
-        port=settings.SMTP_PORT,
+        port=int(settings.SMTP_PORT),
         username=settings.SMTP_USER,
         password=settings.SMTP_PASSWORD,
-        start_tls=True,
+        use_tls=use_ssl,
+        start_tls=not use_ssl,
         tls_context=tls_context,
+        timeout=30,
     )
     logger.info(f"Password-reset OTP email sent successfully to {email}")
 
