@@ -113,13 +113,21 @@ const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const response = await api.post('/auth/register', data);
       setStoredPendingEmail(data.email);
+      // Store debug OTP if email failed (for display on verify page)
+      if (response.data.debug_otp) {
+        try { sessionStorage.setItem('mindtrack_debug_otp', response.data.debug_otp); } catch {}
+      }
       set({
         pendingEmail: data.email,
         requiresOtp: true,
         isLoading: false,
       });
       if (response.data.email_sent === false) {
-        toast.error('Account created but OTP email failed to send. Use "Resend Code" on the next screen.');
+        if (response.data.debug_otp) {
+          toast('Account created! Use the code shown on the next screen.', { icon: '🔑' });
+        } else {
+          toast.error('Account created but OTP email failed to send. Use "Resend Code" on the next screen.');
+        }
       } else {
         toast.success(response.data.message || 'Registration successful. Check your email for OTP.');
       }

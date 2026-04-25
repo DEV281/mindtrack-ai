@@ -38,6 +38,7 @@ class AuthResponse(BaseModel):
     email: Optional[str] = None
     requires_otp: bool = False
     email_sent: bool = True
+    debug_otp: Optional[str] = None  # Only populated when DEBUG=true and email fails
 
 
 class TokenResponse(BaseModel):

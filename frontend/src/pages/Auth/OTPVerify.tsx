@@ -14,6 +14,7 @@ function OTPVerify(): React.ReactElement {
   const [canResend, setCanResend] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isResending, setIsResending] = useState(false);
+  const [debugOtp, setDebugOtp] = useState<string | null>(null);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Countdown timer
@@ -28,10 +29,18 @@ function OTPVerify(): React.ReactElement {
     return () => clearInterval(timer);
   }, [countdown]);
 
-  // Auto-focus first input
+  // Auto-focus first input & load any stored debug OTP
   useEffect(() => {
     if (pendingEmail) {
       inputRefs.current[0]?.focus();
+      // Check if registration stored a debug OTP (email delivery failed)
+      try {
+        const storedOtp = sessionStorage.getItem('mindtrack_debug_otp');
+        if (storedOtp) {
+          setDebugOtp(storedOtp);
+          sessionStorage.removeItem('mindtrack_debug_otp');
+        }
+      } catch {}
     }
   }, [pendingEmail]);
 
@@ -96,9 +105,15 @@ function OTPVerify(): React.ReactElement {
       const { default: api } = await import('../../api/client');
       const response = await api.post('/auth/resend-otp', { email: pendingEmail });
       if (response.data.email_sent === false) {
-        toast.error('OTP generated but email failed to send. Check SMTP configuration on the server.');
-        setError('Email service is unavailable. If running locally, check the backend terminal for the OTP code.');
+        if (response.data.debug_otp) {
+          setDebugOtp(response.data.debug_otp);
+          toast('OTP generated! Use the code shown below.', { icon: '🔑' });
+        } else {
+          toast.error('OTP generated but email failed to send.');
+          setError('Email service is unavailable. Contact the administrator.');
+        }
       } else {
+        setDebugOtp(null);
         toast.success('New verification code sent!');
       }
       setCountdown(30);
@@ -178,6 +193,20 @@ function OTPVerify(): React.ReactElement {
             >
               <AlertCircle className="w-4 h-4 text-accent-red flex-shrink-0" />
               <p className="text-xs text-accent-red">{error}</p>
+            </motion.div>
+          )}
+          {/* Debug OTP display — shown when email delivery fails */}
+          {debugOtp && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="mb-5 p-4 rounded-xl border text-center"
+              style={{ background: 'rgba(234, 179, 8, 0.08)', borderColor: 'rgba(234, 179, 8, 0.3)' }}
+            >
+              <p className="text-xs text-yellow-400 mb-2">📧 Email delivery unavailable — use this code:</p>
+              <div className="font-mono text-2xl font-bold tracking-[0.4em] text-yellow-300">
+                {debugOtp}
+              </div>
             </motion.div>
           )}
 
