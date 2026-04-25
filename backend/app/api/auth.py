@@ -495,24 +495,7 @@ async def get_me(current_user: User = Depends(get_current_user)) -> UserResponse
 
 
 async def _send_otp_email(email: str, otp: str) -> None:
-    """Send OTP via SMTP email."""
-    if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
-        logger.warning(f"SMTP not configured — cannot send OTP to {email}")
-        raise RuntimeError("SMTP credentials not configured. Set SMTP_USER and SMTP_PASSWORD in .env")
-
-    import aiosmtplib
-    import ssl
-    from email.mime.text import MIMEText
-    from email.mime.multipart import MIMEMultipart
-
-    # Fix SSL certificate verification on macOS
-    try:
-        import certifi
-        tls_context = ssl.create_default_context(cafile=certifi.where())
-    except ImportError:
-        tls_context = ssl.create_default_context()
-
-    # Build a nicer HTML email
+    """Send OTP via email — uses Resend API (HTTPS) if configured, else SMTP."""
     html_body = f"""
     <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
         <h2 style="color: #6C63FF; margin-bottom: 8px;">MindTrack AI</h2>
@@ -524,42 +507,76 @@ async def _send_otp_email(email: str, otp: str) -> None:
         <p style="color: #999; font-size: 12px;">If you did not request this code, please ignore this email.</p>
     </div>
     """
-
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = "MindTrack AI — Your Verification Code"
-    msg["From"] = settings.SMTP_USER
-    msg["To"] = email
-    msg.attach(MIMEText(
+    plain_body = (
         f"Your MindTrack AI verification code is: {otp}\n\n"
         f"This code expires in 10 minutes.\n\n"
-        f"If you did not request this code, please ignore this email.",
-        "plain",
-    ))
-    msg.attach(MIMEText(html_body, "html"))
-
-    logger.info(f"Sending OTP email to {email} via {settings.SMTP_HOST}:{settings.SMTP_PORT}")
-
-    # Port 465 = implicit SSL (use_tls), port 587 = STARTTLS
-    use_ssl = int(settings.SMTP_PORT) == 465
-    await aiosmtplib.send(
-        msg,
-        hostname=settings.SMTP_HOST,
-        port=int(settings.SMTP_PORT),
-        username=settings.SMTP_USER,
-        password=settings.SMTP_PASSWORD,
-        use_tls=use_ssl,
-        start_tls=not use_ssl,
-        tls_context=tls_context,
-        timeout=30,
+        f"If you did not request this code, please ignore this email."
     )
-    logger.info(f"OTP email sent successfully to {email}")
+    await _send_email(
+        to=email,
+        subject="MindTrack AI — Your Verification Code",
+        html=html_body,
+        plain=plain_body,
+    )
 
 
 async def _send_reset_email(email: str, otp: str) -> None:
-    """Send a password-reset OTP email via SMTP."""
+    """Send a password-reset OTP email."""
+    html_body = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+        <h2 style="color: #6C63FF; margin-bottom: 8px;">MindTrack AI</h2>
+        <p>You requested a password reset. Your reset code is:</p>
+        <div style="background: #f4f4f8; border-radius: 8px; padding: 16px; text-align: center; margin: 16px 0;">
+            <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #333;">{otp}</span>
+        </div>
+        <p style="color: #666; font-size: 14px;">This code expires in <strong>10 minutes</strong>.</p>
+        <p style="color: #999; font-size: 12px;">If you did not request a password reset, please ignore this email. Your password will not change.</p>
+    </div>
+    """
+    plain_body = (
+        f"Your MindTrack AI password reset code is: {otp}\n\n"
+        f"This code expires in 10 minutes.\n\n"
+        f"If you did not request a password reset, please ignore this email."
+    )
+    await _send_email(
+        to=email,
+        subject="MindTrack AI — Password Reset Code",
+        html=html_body,
+        plain=plain_body,
+    )
+
+
+async def _send_email(*, to: str, subject: str, html: str, plain: str) -> None:
+    """Send an email via Resend API (HTTPS) or SMTP fallback."""
+    import os
+    resend_key = os.environ.get("RESEND_API_KEY")
+
+    if resend_key:
+        # --- Resend API (works on Railway — HTTPS, no SMTP ports needed) ---
+        import httpx
+        from_addr = os.environ.get("RESEND_FROM", "MindTrack AI <onboarding@resend.dev>")
+        logger.info(f"Sending email to {to} via Resend API")
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(
+                "https://api.resend.com/emails",
+                headers={"Authorization": f"Bearer {resend_key}"},
+                json={
+                    "from": from_addr,
+                    "to": [to],
+                    "subject": subject,
+                    "html": html,
+                    "text": plain,
+                },
+            )
+            if resp.status_code not in (200, 201):
+                logger.error(f"Resend API error: {resp.status_code} {resp.text}")
+                raise RuntimeError(f"Resend API error: {resp.status_code} {resp.text}")
+        logger.info(f"Email sent successfully to {to} via Resend")
+        return
+
+    # --- SMTP fallback (for local development) ---
     if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
-        logger.warning(f"SMTP not configured — cannot send reset OTP to {email}")
-        raise RuntimeError("SMTP credentials not configured.")
+        raise RuntimeError("No email provider configured. Set RESEND_API_KEY or SMTP_USER/SMTP_PASSWORD.")
 
     import aiosmtplib
     import ssl
@@ -572,38 +589,21 @@ async def _send_reset_email(email: str, otp: str) -> None:
     except ImportError:
         tls_context = ssl.create_default_context()
 
-    html_body = f"""
-    <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
-        <h2 style="color: #6C63FF; margin-bottom: 8px;">MindTrack AI</h2>
-        <p>You requested a password reset. Your reset code is:</p>
-        <div style="background: #f4f4f8; border-radius: 8px; padding: 16px; text-align: center; margin: 16px 0;">
-            <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #333;">{otp}</span>
-        </div>
-        <p style="color: #666; font-size: 14px;">This code expires in <strong>10 minutes</strong>.</p>
-        <p style="color: #999; font-size: 12px;">If you did not request a password reset, please ignore this email. Your password will not change.</p>
-    </div>
-    """
-
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = "MindTrack AI — Password Reset Code"
+    msg["Subject"] = subject
     msg["From"] = settings.SMTP_USER
-    msg["To"] = email
-    msg.attach(MIMEText(
-        f"Your MindTrack AI password reset code is: {otp}\n\n"
-        f"This code expires in 10 minutes.\n\n"
-        f"If you did not request a password reset, please ignore this email.",
-        "plain",
-    ))
-    msg.attach(MIMEText(html_body, "html"))
+    msg["To"] = to
+    msg.attach(MIMEText(plain, "plain"))
+    msg.attach(MIMEText(html, "html"))
 
-    logger.info(f"Sending password-reset OTP email to {email}")
+    port = int(settings.SMTP_PORT)
+    use_ssl = port == 465
+    logger.info(f"Sending email to {to} via SMTP {settings.SMTP_HOST}:{port}")
 
-    # Port 465 = implicit SSL (use_tls), port 587 = STARTTLS
-    use_ssl = int(settings.SMTP_PORT) == 465
     await aiosmtplib.send(
         msg,
         hostname=settings.SMTP_HOST,
-        port=int(settings.SMTP_PORT),
+        port=port,
         username=settings.SMTP_USER,
         password=settings.SMTP_PASSWORD,
         use_tls=use_ssl,
@@ -611,5 +611,5 @@ async def _send_reset_email(email: str, otp: str) -> None:
         tls_context=tls_context,
         timeout=30,
     )
-    logger.info(f"Password-reset OTP email sent successfully to {email}")
+    logger.info(f"Email sent successfully to {to} via SMTP")
 
