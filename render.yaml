@@ -1,0 +1,52 @@
+# ═══════════════════════════════════════════════════════════
+# MindTrack AI — Render Blueprint (render.yaml)
+# Deploy: Connect this repo on https://dashboard.render.com
+# ═══════════════════════════════════════════════════════════
+services:
+  - type: web
+    name: mindtrack-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    region: oregon
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      # Database (Supabase)
+      - key: DATABASE_URL
+        sync: false
+      # Redis (Upstash)
+      - key: REDIS_URL
+        sync: false
+      # Auth
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "60"
+      - key: REFRESH_TOKEN_EXPIRE_DAYS
+        value: "30"
+      # Gmail SMTP (works natively on Render — port 587 is NOT blocked)
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      # AI
+      - key: GROQ_API_KEY
+        sync: false
+      # Frontend URL (Vercel)
+      - key: FRONTEND_URL
+        value: https://mindtrack-ai.vercel.app
+      # App
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: "false"
+      # Demo
+      - key: DEMO_EMAIL
+        value: demo@mindtrack.ai
+      - key: DEMO_PASSWORD
+        sync: false

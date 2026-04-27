@@ -78,7 +78,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS — allow localhost, ngrok, and Vercel production domains
+# CORS — allow localhost, ngrok, Vercel, and Render production domains
 allowed_origins = [
     "http://localhost:3000",
     "http://localhost:5173",
@@ -90,7 +90,7 @@ allowed_origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[o for o in allowed_origins if o],
-    allow_origin_regex=r"(http://localhost(:\d+)?|https://.*\.vercel\.app|https://.*\.ngrok-free\.app|https://.*\.ngrok\.io)",
+    allow_origin_regex=r"(http://localhost(:\d+)?|https://.*\.vercel\.app|https://.*\.ngrok-free\.app|https://.*\.ngrok\.io|https://.*\.onrender\.com)",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -107,7 +107,7 @@ app.include_router(analysis.router)
 
 @app.get("/health")
 async def health_check() -> dict:
-    """Health check endpoint for Railway and monitoring."""
+    """Health check endpoint for Render/Railway and monitoring."""
     return {
         "status": "healthy",
         "version": "4.0.0",
