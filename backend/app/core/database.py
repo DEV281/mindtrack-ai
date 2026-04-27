@@ -13,13 +13,20 @@ settings = get_settings()
 _connect_args = {}
 _db_url = settings.DATABASE_URL
 
-# Supabase pooler requires SSL
+# Strip query params that asyncpg doesn't understand (e.g. ?pgbouncer=true)
+if "?" in _db_url:
+    _db_url = _db_url.split("?")[0]
+
+# Supabase pooler requires SSL and prepared_statement_cache_size=0
 if "supabase.com" in _db_url or "pooler.supabase.com" in _db_url:
     import ssl
     ssl_ctx = ssl.create_default_context()
     ssl_ctx.check_hostname = False
     ssl_ctx.verify_mode = ssl.CERT_NONE
     _connect_args["ssl"] = ssl_ctx
+    # PgBouncer/Supavisor pooler doesn't support prepared statements
+    _connect_args["prepared_statement_cache_size"] = 0
+    _connect_args["statement_cache_size"] = 0
 
 engine = create_async_engine(
     _db_url,
