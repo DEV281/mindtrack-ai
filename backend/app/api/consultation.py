@@ -29,6 +29,7 @@ from app.core.ai_engine import (
     get_fallback_response,
     build_system_prompt,
 )
+from app.core.safety_filter import check_message_safety
 from app.db.models import (
     AssessmentResult,
     Consultation,
@@ -589,7 +590,7 @@ async def websocket_consultation(websocket: WebSocket, consultation_id: str) -> 
 
         while True:
             try:
-                raw = await asyncio.wait_for(websocket.receive_text(), timeout=120.0)
+                raw = await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
             except asyncio.TimeoutError:
                 try:
                     await manager.send_json(websocket, {"type": "ping"})
@@ -608,6 +609,16 @@ async def websocket_consultation(websocket: WebSocket, consultation_id: str) -> 
             # --- Ping/Pong ---
             if msg_type == "ping":
                 await manager.send_json(websocket, {"type": "pong"})
+                continue
+
+            # --- Context request (reconnection) ---
+            if msg_type == "context_request":
+                await manager.send_json(websocket, {
+                    "type": "context_response",
+                    "turn_count": context.get("turn_count", 0),
+                    "personality_mode": context.get("personality_mode", "companion"),
+                    "language": context.get("language", "en"),
+                })
                 continue
 
             # --- Mode switch ---
@@ -729,6 +740,54 @@ async def websocket_consultation(websocket: WebSocket, consultation_id: str) -> 
             if not patient_text.strip():
                 continue
 
+            # ── Rate limiting ──
+            try:
+                from app.core.redis_client import get_redis
+                redis = await get_redis()
+                rate_key = f"rate:{consultation_id}"
+                msg_count = await redis.incr(rate_key)
+                if msg_count == 1:
+                    await redis.expire(rate_key, 3600)
+                if msg_count > settings.SESSION_RATE_LIMIT_MESSAGES:
+                    rate_msg_id = str(uuid.uuid4())
+                    rate_msg = "You've been sharing a lot today — that's wonderful. Let's take a short breather to let everything settle. I'll be right here when you're ready 💙"
+                    await manager.send_json(websocket, {"type": "stream_start", "message_id": rate_msg_id})
+                    await manager.send_json(websocket, {"type": "stream_chunk", "text": rate_msg, "message_id": rate_msg_id})
+                    await manager.send_json(websocket, {"type": "stream_end", "message_id": rate_msg_id, "stress_update": analysis})
+                    continue
+            except Exception:
+                pass  # Redis unavailable — skip rate limiting
+
+            # ── Safety filter (runs BEFORE AI call) ──
+            safety_result = check_message_safety(
+                patient_text,
+                analysis.get("stress", 0),
+                analysis.get("anxiety", 0),
+            )
+
+            if not safety_result["is_safe"]:
+                safety_msg_id = str(uuid.uuid4())
+                await manager.send_json(websocket, {"type": "stream_start", "message_id": safety_msg_id})
+                await manager.send_json(websocket, {"type": "stream_chunk", "text": safety_result["response"], "message_id": safety_msg_id})
+                await manager.send_json(websocket, {
+                    "type": "stream_end",
+                    "message_id": safety_msg_id,
+                    "stress_update": analysis,
+                    "language": context.get("language", "en"),
+                    "mode": context.get("personality_mode", "companion"),
+                    "complete_text": safety_result["response"],
+                    "detected_language": context.get("language", "en"),
+                })
+                asyncio.create_task(_save_message(consultation_id, "patient", patient_text, analysis, input_method, camera_data))
+                asyncio.create_task(_save_message(consultation_id, "ai", safety_result["response"], analysis))
+                history.append({"sender": "patient", "text": patient_text})
+                history.append({"sender": "ai", "text": safety_result["response"]})
+                if len(history) > 30:
+                    history = history[-30:]
+                context["turn_count"] = context.get("turn_count", 0) + 1
+                asyncio.create_task(_save_chat_context(consultation_id, context))
+                continue
+
             # Detect personality mode change
             context["personality_mode"] = detect_personality_mode(
                 patient_text, context.get("personality_mode", "companion"),
@@ -756,6 +815,7 @@ async def websocket_consultation(websocket: WebSocket, consultation_id: str) -> 
 
             # Stream response from Groq (with camera data)
             full_response = ""
+            detected_language = context.get("language", "en")
             try:
                 async for chunk in generate_live_response_stream(
                     patient_text, history, context, analysis, camera_data,
@@ -766,6 +826,7 @@ async def websocket_consultation(websocket: WebSocket, consultation_id: str) -> 
                         "text": chunk,
                         "message_id": message_id,
                     })
+                detected_language = context.get("language", "en")
             except Exception as e:
                 logger.error("Streaming error: %s", e)
                 if not full_response:
@@ -781,8 +842,10 @@ async def websocket_consultation(websocket: WebSocket, consultation_id: str) -> 
                 "type": "stream_end",
                 "message_id": message_id,
                 "stress_update": analysis,
-                "language": context.get("language", "en"),
+                "language": detected_language,
                 "mode": context.get("personality_mode", "companion"),
+                "complete_text": full_response,
+                "detected_language": detected_language,
                 "alerts": [],
             })
 

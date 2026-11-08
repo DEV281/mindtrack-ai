@@ -34,6 +34,19 @@ _models_loaded = False
 _demo_mode = True
 
 
+from app.models.facial_inference import FaceAnalyzer
+
+_face_analyzer: Optional[FaceAnalyzer] = None
+
+
+def _get_face_analyzer() -> FaceAnalyzer:
+    """Lazy-load the FaceAnalyzer singleton."""
+    global _face_analyzer
+    if _face_analyzer is None:
+        _face_analyzer = FaceAnalyzer()
+    return _face_analyzer
+
+
 def _get_models():
     """Lazy-load ML models. Returns (facial, voice, temporal) or None in demo mode."""
     global _facial_model, _voice_model, _temporal_model, _models_loaded, _demo_mode
@@ -105,6 +118,24 @@ def _generate_demo_analysis(frame_count: int) -> dict:
         "model_rank": 1,
         "alerts": alerts,
     }
+
+
+@router.get("/analysis/model-status")
+async def get_model_status() -> dict:
+    """Return the current model status for frontend display."""
+    try:
+        analyzer = _get_face_analyzer()
+        return analyzer.get_model_status()
+    except Exception as e:
+        logger.warning("Failed to get model status: %s", e)
+        return {
+            "real_model_loaded": False,
+            "model_name": "ViT-Base-Patch16-224",
+            "dataset": "FER2013",
+            "emotion_classes": 7,
+            "status": "error",
+            "message": str(e),
+        }
 
 
 async def _run_real_analysis(video_b64: Optional[str], audio_b64: Optional[str], temporal_buffer: list) -> dict:
@@ -223,14 +254,43 @@ async def websocket_analysis(websocket: WebSocket, session_id: str):
             video_b64 = data.get("video_frame")
             audio_b64 = data.get("audio_chunk")
 
-            # Run analysis
-            if _demo_mode:
-                result = _generate_demo_analysis(frame_count)
-            else:
+            # Run analysis — try real FaceAnalyzer first, fall back to demo
+            analyzer = _get_face_analyzer()
+            if analyzer.real_model and video_b64:
+                # Real ViT model is loaded — use it for facial analysis
+                try:
+                    import cv2
+                    frame_bytes = base64.b64decode(video_b64)
+                    nparr = np.frombuffer(frame_bytes, np.uint8)
+                    frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                    if frame is not None:
+                        face_result = analyzer.analyze(frame)
+                        # Merge real facial results with demo data for voice/temporal
+                        demo = _generate_demo_analysis(frame_count)
+                        result = {
+                            **demo,
+                            "emotions": face_result.get("emotions", demo["emotions"]),
+                            "dominant_emotion": face_result.get("dominant_emotion", demo["dominant_emotion"]),
+                            "stress": face_result.get("stress", demo["stress"]),
+                            "confidence": face_result.get("confidence", demo["confidence"]),
+                            "demo_mode": False,
+                            "real_facial": True,
+                        }
+                    else:
+                        result = _generate_demo_analysis(frame_count)
+                        result["demo_mode"] = True
+                except Exception as e:
+                    logger.warning("FaceAnalyzer error, falling back to demo: %s", e)
+                    result = _generate_demo_analysis(frame_count)
+                    result["demo_mode"] = True
+            elif not _demo_mode:
                 result = await _run_real_analysis(video_b64, audio_b64, temporal_buffer)
                 temporal_buffer.append(result)
                 if len(temporal_buffer) > 20:
                     temporal_buffer = temporal_buffer[-10:]
+            else:
+                result = _generate_demo_analysis(frame_count)
+                result["demo_mode"] = True
 
             frame_count += 1
 

@@ -71,6 +71,7 @@ class Settings(BaseSettings):
     BASE_DIR: str = str(Path(__file__).resolve().parent.parent.parent)
     DATA_DIR: str = str(Path(__file__).resolve().parent.parent.parent / "data")
     PRETRAINED_DIR: str = str(Path(__file__).resolve().parent.parent.parent / "data" / "pretrained")
+    REAL_MODEL_PATH: str = str(Path(__file__).resolve().parent.parent.parent / "data" / "pretrained" / "vit_fer2013_best.pt")
 
     # Demo credentials
     DEMO_EMAIL: str = "demo@mindtrack.ai"

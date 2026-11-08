@@ -13,6 +13,7 @@ import { useWebSocket } from '../../hooks/useWebSocket';
 import { useSession } from '../../hooks/useSession';
 import { useSpeechOutput } from '../../hooks/useSpeechOutput';
 import useSessionStore from '../../store/sessionStore';
+import api from '../../api/client';
 import toast from 'react-hot-toast';
 
 const MODE_OPTIONS = [
@@ -37,11 +38,19 @@ function LiveSession(): React.ReactElement {
   const { speak, settings: voiceSettings } = useSpeechOutput();
 
   const [showModelSelect, setShowModelSelect] = useState(false);
+  const [modelStatus, setModelStatus] = useState<{ real_model_loaded: boolean; status: string } | null>(null);
   const frameIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastAlertTimeRef = useRef(0);
   const sessionAnnouncedRef = useRef(false);
 
   // Send frames every 2 seconds when active
+  useEffect(() => {
+    // Fetch model status on mount
+    api.get('/analysis/model-status')
+      .then((res) => setModelStatus(res.data))
+      .catch(() => setModelStatus({ real_model_loaded: false, status: 'unavailable' }));
+  }, []);
+
   useEffect(() => {
     if (isActive && isConnected && cameraReady) {
       frameIntervalRef.current = setInterval(() => {
@@ -120,6 +129,24 @@ function LiveSession(): React.ReactElement {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {/* Model Status Indicator */}
+          {modelStatus && (
+            <div className="flex items-center gap-1.5 text-xs" style={{ fontFamily: 'Nunito, sans-serif' }}>
+              <div
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: '50%',
+                  background: modelStatus.real_model_loaded ? '#52b788' : '#e9c46a',
+                  boxShadow: modelStatus.real_model_loaded ? '0 0 6px rgba(82,183,136,0.4)' : 'none',
+                }}
+              />
+              <span style={{ color: modelStatus.real_model_loaded ? '#52b788' : '#e9c46a', fontWeight: 600 }}>
+                {modelStatus.real_model_loaded ? 'Live AI Analysis' : 'Demo Mode'}
+              </span>
+            </div>
+          )}
+
           {/* Mode Selector */}
           <div className="relative">
             <button

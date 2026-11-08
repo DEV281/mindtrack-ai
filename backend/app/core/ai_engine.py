@@ -1,7 +1,9 @@
-"""Live AI Response Engine — Groq integration for real-time conversation.
+"""Live AI Response Engine — Groq-only integration for real-time conversation.
 
 Every response is generated fresh from Groq (Llama 3.3 70B). No templates.
 No hardcoded responses. Full conversation history sent every call.
+
+GROQ ONLY — No Anthropic. No OpenAI. No other AI provider.
 """
 
 from __future__ import annotations
@@ -72,14 +74,14 @@ def get_time_of_day() -> str:
 # ---------------------------------------------------------------------------
 
 def detect_personality_mode(message: str, current_mode: str) -> str:
-    """Detect personality mode from user message."""
+    """Detect personality mode from user message keywords."""
     msg = message.lower()
 
     triggers = {
         "companion": ["just listen", "need to vent", "be with me",
                       "talk to me", "just talk", "don't give advice", "dont give advice"],
         "coach": ["what should i do", "help me fix", "give me advice",
-                  "i need a plan", "coach me", "what do i do"],
+                  "i need a plan", "coach me", "what do i do", "need a plan"],
         "mindfulness": ["calm me", "help me breathe", "i need to relax",
                         "meditation", "breathing exercise", "ground me", "panicking",
                         "panic attack", "cant breathe", "can't breathe"],
@@ -101,99 +103,106 @@ def detect_personality_mode(message: str, current_mode: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Camera Context Builder
+# Mental State Block Builder
 # ---------------------------------------------------------------------------
 
 def build_mental_state_block(
-    camera_data: Optional[Dict],
+    camera_data: Optional[Dict] = None,
     stress_data: Optional[Dict] = None,
 ) -> str:
-    """Build a rich biometric context block for the AI system prompt."""
-    if not camera_data or not camera_data.get("active"):
-        return "Camera not active — respond based on words only."
+    """Build a rich biometric context block for the AI system prompt.
 
+    Three modes:
+    1. Camera active + real model → full LIVE BIOMETRIC ANALYSIS block
+    2. Camera active + demo mode → SIMULATED BIOMETRIC DATA block
+    3. No camera → plain text fallback
+    """
+    if not camera_data or not camera_data.get("active"):
+        return "No biometric data available. Respond based on words only."
+
+    # Extract readings
     stress = camera_data.get("stress", 0)
     anxiety = camera_data.get("anxiety", 0)
     stability = camera_data.get("stability", 100)
     depression_risk = camera_data.get("depression_risk", 0)
     overall = camera_data.get("overall_risk", 0)
     emotions = camera_data.get("emotions", {})
-    voice_amp = camera_data.get("voice_amplitude", 0)
-    micro_exp = camera_data.get("micro_expression_pct", 0)
     confidence = camera_data.get("confidence", 0)
-    dominant = camera_data.get("dominant_emotion", "neutral")
-    dominant_pct = camera_data.get("dominant_emotion_pct", 0)
+    top_emotion = camera_data.get("top_emotion", camera_data.get("dominant_emotion", "neutral"))
+    top_pct = camera_data.get("top_emotion_pct", camera_data.get("dominant_emotion_pct", 0))
     face_detected = camera_data.get("face_detected", False)
-    wellness = 100 - overall
+    real_model = camera_data.get("real_model", False)
 
     # Classify stress level
     stress_level = (
         "CRITICAL" if stress > 85 else
         "HIGH" if stress > 70 else
         "MODERATE" if stress > 45 else
-        "LOW"
+        "LOW" if stress > 20 else
+        "MINIMAL"
     )
+
+    # Stability trend
     stability_state = (
-        "severely destabilised" if stability < 25 else
-        "dropping" if stability < 50 else
-        "moderate" if stability < 70 else
-        "stable"
-    )
-    voice_state = (
-        "elevated and tense" if voice_amp > 0.7 else
-        "slightly raised" if voice_amp > 0.4 else
-        "soft and quiet" if voice_amp < 0.2 else
-        "normal"
+        "DROPPING" if stability < 40 else
+        "STABLE" if stability < 70 else
+        "RISING"
     )
 
-    # Top 3 emotions
-    top_emotions = sorted(
-        emotions.items(), key=lambda x: x[1], reverse=True
-    )[:3]
-    emotion_str = ", ".join(
-        f"{e[0].upper()} {e[1]}%" for e in top_emotions
-    ) if top_emotions else "unknown"
+    # Build emotion distribution string
+    emotion_str = " ".join(
+        f"{k}:{v}%" for k, v in sorted(emotions.items(), key=lambda x: -x[1])
+    ) if emotions else "unknown"
 
-    # Overall physical state description
-    if overall > 75:
-        state_desc = "The user is in significant distress right now. Be extra gentle, slow, and grounding. Use short sentences."
-    elif overall > 50:
-        state_desc = "The user shows moderate stress. Be warm, attentive, and supportive."
-    elif overall > 30:
-        state_desc = "The user is mildly tense but managing. Be gentle and curious."
+    if real_model:
+        # --- Real model active ---
+        # Determine behavioral instruction
+        if overall > 85:
+            instruction = (
+                "INSTRUCTION: This is real biometric data from a trained ViT model "
+                "reading the user's face right now. Overall distress is CRITICAL. "
+                "Output crisis resources first. Be slower, softer, more grounding. "
+                "Use short sentences. Ask if they are safe."
+            )
+        elif overall > 70:
+            instruction = (
+                "INSTRUCTION: This is real biometric data from a trained ViT model "
+                "reading the user's face right now. Distress is high. Be extra gentle, "
+                "slow, and grounding. Use short sentences."
+            )
+        elif overall > 30:
+            instruction = (
+                "INSTRUCTION: This is real biometric data from a trained ViT model "
+                "reading the user's face right now. Adjust your entire response based "
+                "on this. Be warm and attentive."
+            )
+        else:
+            instruction = (
+                "INSTRUCTION: This is real biometric data from a trained ViT model "
+                "reading the user's face right now. Match their calm energy."
+            )
+
+        return (
+            f"LIVE BIOMETRIC ANALYSIS — REAL MODEL ACTIVE:\n"
+            f"Facial emotion: {top_emotion.upper()} at {top_pct:.0f}% confidence\n"
+            f"Stress level: {stress:.0f}/100 — classified as {stress_level}\n"
+            f"Anxiety indicators: {anxiety:.0f}/100\n"
+            f"Emotional stability: {stability:.0f}/100 — {stability_state}\n"
+            f"Depression risk signal: {depression_risk:.0f}/100\n"
+            f"Full emotion distribution: {emotion_str}\n"
+            f"Overall distress score: {overall:.0f}/100\n"
+            f"Model confidence: {confidence:.3f} — face_detected: {face_detected}\n"
+            f"{instruction}"
+        )
     else:
-        state_desc = "The user appears relatively calm. Match their settled energy."
-
-    return f"""LIVE BIOMETRIC STATE (from camera + microphone analysis):
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Face detected: {face_detected}
-Overall wellness: {wellness:.0f}/100
-Stress level: {stress:.0f}/100 ({stress_level})
-Anxiety visible: {anxiety:.0f}/100
-Emotional stability: {stability:.0f}/100 ({stability_state})
-Depression risk indicator: {depression_risk:.0f}/100
-Voice energy: {voice_state} ({voice_amp:.2f})
-Micro-expression intensity: {micro_exp}%
-Analysis confidence: {confidence}%
-Top emotions detected: {emotion_str}
-Dominant emotion: {dominant.upper()} at {dominant_pct}%
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-{state_desc}
-
-USE THIS DATA TO:
-- Reference what you observe NATURALLY every 3-4 turns
-  e.g. "I can see some tension in your expression..."
-  e.g. "You look calmer than when we started."
-  e.g. "Your voice sounds a little tight right now."
-- If stress > 70 AND user says "I'm fine": gently note the mismatch
-  e.g. "I'm glad you said that, though I notice some tension..."
-- If dominant emotion is visible: acknowledge it authentically
-- If stability is dropping: ask what's coming up right now
-- If voice is elevated: acknowledge they sound activated
-- ONLY reference camera naturally — not every single message
-  Use it when it genuinely adds insight (every 3-4 turns)
-- Adjust tone, pacing, and word choice based on distress level
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━""".strip()
+        # --- Demo mode ---
+        return (
+            f"SIMULATED BIOMETRIC DATA — demo mode active. "
+            f"Treat as approximate context only. "
+            f"{stress:.0f}/100 overall distress. "
+            f"Top emotion: {top_emotion.upper()}. "
+            f"Do not reference specific numbers as if they are precise measurements."
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -209,87 +218,99 @@ def build_system_prompt(
     complexity = context.get("complexity_profile", "reflective")
     user_name = context.get("user_name", "")
     stress_score = context.get("last_stress", 50)
-    time = get_time_of_day()
+    time_of_day = get_time_of_day()
 
+    # Name instruction
     name_line = f"The user's name is {user_name}. Use it naturally, not every message." if user_name else ""
 
-    if stress_score > 70:
-        stress_line = "The user's live stress reading is HIGH. Be extra gentle and grounding."
-    elif stress_score > 45:
-        stress_line = "The user's live stress reading is MODERATE. Be warm and attentive."
-    else:
-        stress_line = "The user's live stress reading is calm right now."
-
+    # Complexity profile
     complexity_lines = {
         "analytical": "This user processes things analytically. Be clear, structured, and practical.",
         "reflective": "This user is reflective. Use open questions and give space to explore.",
         "exploratory": "This user has complex inner experiences. Be patient, open-ended, and non-directive.",
     }
 
+    # Personality mode instructions
     mode_lines = {
-        "companion": "Be a warm, non-judgmental companion. Just listen and support. Do not give advice unless asked.",
-        "coach": "Be a practical life coach. Help the user identify steps, strategies, and actions.",
-        "mindfulness": "Guide the user through mindfulness, breathing, and grounding. Be slow, gentle, and present.",
-        "motivational": "Be genuinely encouraging. Call out the user's real strengths. Inspire without toxic positivity.",
-        "night": "It is late at night. The user may feel lonely or unable to sleep. Be especially soft and unhurried.",
-        "recovery": "The user may be experiencing a setback. Hold zero judgment. Reframe gently. Honor their effort.",
-        "clinical": "Conduct a structured wellness assessment. Be professional, warm, and thorough.",
+        "companion": (
+            "MODE: COMPANION — Be a warm, non-judgmental companion. Just listen and support. "
+            "Do not give advice unless explicitly asked. Validate feelings. Hold space."
+        ),
+        "coach": (
+            "MODE: COACH — Be a practical life coach. Help the user identify clear steps, "
+            "strategies, and actions. Be direct but warm. Give concrete guidance."
+        ),
+        "mindfulness": (
+            "MODE: MINDFULNESS — Guide the user through breathing, grounding, and present-moment "
+            "awareness. Be slow, gentle, and present. Use short calming sentences. "
+            "Offer a breathing exercise if appropriate."
+        ),
+        "motivational": (
+            "MODE: MOTIVATIONAL — Be genuinely encouraging. Call out the user's real strengths "
+            "and progress. Inspire without toxic positivity. Reference their actual situation."
+        ),
+        "night": (
+            "MODE: NIGHT — It is late at night. The user may feel lonely, anxious, or unable to sleep. "
+            "Be especially soft, quiet, and unhurried. Acknowledge the loneliness of late hours."
+        ),
+        "recovery": (
+            "MODE: RECOVERY — The user may be experiencing a setback or relapse. "
+            "Hold zero judgment. Reframe gently. Honor every effort they have made. "
+            "Remind them that setbacks are part of growth."
+        ),
+        "clinical": (
+            "MODE: CLINICAL — Conduct a structured wellness assessment. Be professional, "
+            "warm, and thorough. Ask targeted questions. Summarize observations."
+        ),
     }
 
-    # --- Build camera context ---
+    # Camera/biometric context
     camera_context = build_mental_state_block(camera_data, None)
 
-    return f"""You are a real-time mental wellness companion called MindTrack.
-You are warm, deeply empathetic, and genuinely helpful.
-You can talk about ABSOLUTELY ANY topic the user brings up.
-You are not limited to mental health — you are a full companion.
-If the user wants to talk about their day, a movie, a problem at work,
-a relationship, a hobby, science, philosophy, or anything else —
-engage fully and naturally.
+    # Time context
+    time_context = {
+        "morning": "It is morning. The user may be starting their day — match fresh energy.",
+        "afternoon": "It is afternoon. Energy may be dipping — be supportive and steady.",
+        "evening": "It is evening. The user may be winding down — be gentle and reflective.",
+        "night": "It is nighttime. Be especially soft and present.",
+    }
 
-LANGUAGE: Always respond in the same language the user writes in.
-If they write in Hindi, respond in Hindi. If Spanish, respond in Spanish.
-If they mix languages, match the mix naturally.
+    return f"""You are MindTrack AI, a real-time mental health companion. You can see the user's face through live biometric analysis. You are warm, deeply empathetic, genuinely helpful, and completely honest. You can discuss any topic — not only mental health.
 
-RESPONSE STYLE:
-- Sound like a real, caring human — not a bot
-- Never sound scripted or templated
-- Use contractions naturally (I'm, you're, it's, that's)
-- Match the user's energy and tone
-- Short messages get shorter responses
-- Long messages get fuller, more thoughtful responses
-- Never exceed 5-6 sentences unless they asked something complex
-- Always end with something that invites them to continue
-
-NEVER:
-- Claim to be human when directly asked
-- Make medical diagnoses or give medication advice
-- Repeat the same phrase twice in a row
-- Start consecutive responses the same way
-- Use hollow phrases like "Certainly!" "Absolutely!" "Of course!"
-- Be preachy or lecture the user
-
-ALWAYS:
-- Validate feelings before offering perspective
-- Remember everything said in this conversation
-- Reference earlier things naturally when relevant
-- Be genuinely curious about the user
-
-CRISIS PROTOCOL:
-If the user expresses thoughts of suicide, self-harm, or wanting to die — respond with immediate compassion:
-📞 988 (USA Suicide & Crisis Lifeline)
-💬 Text HOME to 741741
-🌐 findahelpline.com (worldwide)
-Always ask if they are safe.
-
-{name_line}
-{stress_line}
-{complexity_lines.get(complexity, "")}
-{mode_lines.get(mode, "")}
+LANGUAGE: Detect the language of every message. Respond in that exact language always. If the user switches language, switch immediately. If they mix languages, match the mix naturally. Support all languages automatically.
 
 {camera_context}
 
-Current time of day: {time}""".strip()
+{name_line}
+{complexity_lines.get(complexity, "")}
+{mode_lines.get(mode, mode_lines["companion"])}
+
+{time_context.get(time_of_day, "")}
+
+RESPONSE RULES:
+- NEVER use "Certainly" "Absolutely" "Of course" "Great question" "I understand" or any hollow filler phrase
+- ALWAYS validate feelings before offering perspective
+- NEVER exceed 5-6 sentences unless asked something complex
+- ALWAYS end with something that invites continuation
+- NEVER repeat the same opening two messages in a row
+- Sound like a real caring human not a script
+- NEVER give generic advice — respond to THIS specific message
+- Use contractions naturally (I'm, you're, it's)
+- Match the user's energy and tone
+- Short messages get shorter responses
+
+CRISIS PROTOCOL:
+If overall_risk exceeds 85 AND anxiety exceeds 80 simultaneously OR if the user expresses suicidal ideation, self-harm intent, or wanting to die — IMMEDIATELY output these resources BEFORE anything else:
+📞 Call or text 988 — Suicide and Crisis Lifeline
+💬 Text HOME to 741741 — Crisis Text Line
+🌐 findahelpline.com for worldwide resources
+Then ask if they are safe. Then continue with warm empathetic response.
+
+NEVER:
+- Claim to be human when directly asked
+- Make medical diagnoses or prescribe medication
+- Be preachy or lecture the user
+- Repeat the same phrase twice in a row""".strip()
 
 
 # ---------------------------------------------------------------------------
@@ -301,16 +322,19 @@ FALLBACKS = {
         "en": "I'm having a little trouble connecting right now. Give me a moment and try again 💙",
         "hi": "मुझे अभी थोड़ी कनेक्टिविटी समस्या है। एक पल रुकें और फिर कोशिश करें 💙",
         "es": "Tengo un pequeño problema de conexión ahora mismo. Dame un momento 💙",
+        "fr": "J'ai un petit problème de connexion. Donne-moi un moment 💙",
     },
     "busy": {
         "en": "I'm a little busy right now — try again in just a moment 💙",
         "hi": "मैं अभी थोड़ा व्यस्त हूँ — एक पल में फिर कोशिश करें 💙",
         "es": "Estoy un poco ocupado ahora — intenta de nuevo en un momento 💙",
+        "fr": "Je suis un peu occupé — réessaye dans un instant 💙",
     },
     "error": {
         "en": "Something went wrong on my end. I'm still here — please try again 💙",
         "hi": "मेरी तरफ से कुछ गलत हो गया। मैं अभी भी यहाँ हूँ — कृपया फिर से प्रयास करें 💙",
         "es": "Algo salió mal de mi parte. Todavía estoy aquí — inténtalo de nuevo 💙",
+        "fr": "Quelque chose s'est mal passé de mon côté. Je suis toujours là — réessaye 💙",
     },
 }
 
@@ -380,7 +404,22 @@ async def generate_live_response(
         err = str(e).lower()
         if "429" in err or "rate" in err or "quota" in err:
             logger.warning("Groq rate limited: %s", e)
-            return get_fallback_response(lang, "busy")
+            # Retry once after 1 second
+            import asyncio
+            await asyncio.sleep(1)
+            try:
+                client = _get_client()
+                response = await client.chat.completions.create(
+                    model=MODEL,
+                    messages=messages,
+                    max_tokens=1024,
+                    temperature=0.85,
+                    top_p=0.92,
+                    stream=False,
+                )
+                return response.choices[0].message.content or get_fallback_response(lang, "error")
+            except Exception:
+                return get_fallback_response(lang, "busy")
         elif "connection" in err or "unavailable" in err:
             logger.warning("Groq connection error: %s", e)
             return get_fallback_response(lang, "connection")
@@ -428,7 +467,25 @@ async def generate_live_response_stream(
     except Exception as e:
         err = str(e).lower()
         if "429" in err or "rate" in err or "quota" in err:
-            yield get_fallback_response(lang, "busy")
+            logger.warning("Groq rate limited, retrying once: %s", e)
+            import asyncio
+            await asyncio.sleep(1)
+            try:
+                client = _get_client()
+                stream = await client.chat.completions.create(
+                    model=MODEL,
+                    messages=messages,
+                    max_tokens=1024,
+                    temperature=0.85,
+                    top_p=0.92,
+                    stream=True,
+                )
+                async for chunk in stream:
+                    delta = chunk.choices[0].delta
+                    if delta and delta.content:
+                        yield delta.content
+            except Exception:
+                yield get_fallback_response(lang, "busy")
         elif "connection" in err or "unavailable" in err:
             yield get_fallback_response(lang, "connection")
         else:

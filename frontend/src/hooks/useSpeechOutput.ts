@@ -3,6 +3,8 @@
  *
  * Provides text-to-speech with voice selection, rate/pitch/volume control,
  * markdown stripping, sentence-level queueing, and localStorage persistence.
+ *
+ * Chrome workaround: uses a module-level ping interval instead of (window as any).
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
@@ -26,9 +28,12 @@ export interface UseSpeechOutputReturn {
   stop: () => void;
   pause: () => void;
   resume: () => void;
+  skipToNext: () => void;
   isSpeaking: boolean;
   isPaused: boolean;
   isSupported: boolean;
+  isReady: boolean;
+  enabled: boolean;
   selectedVoice: SpeechSynthesisVoice | null;
   availableVoices: SpeechSynthesisVoice[];
   setVoice: (voice: SpeechSynthesisVoice) => void;
@@ -49,9 +54,9 @@ const STORAGE_KEY = 'mindtrack_voice_settings';
 
 const DEFAULT_SETTINGS: VoiceSettings = {
   voiceName: null,
-  rate: 0.88,
-  pitch: 1.05,
-  volume: 0.92,
+  rate: 0.92,
+  pitch: 1.0,
+  volume: 1.0,
   autoSpeak: true,
   autoListen: true,
   language: 'en-US',
@@ -62,8 +67,35 @@ const VOICE_PRIORITY = [
   'Google UK English Female',
   'Google US English',
   'Microsoft Aria Online (Natural)',
+  'Microsoft Zira',
+  'Natural',
+  'Enhanced',
   'Samantha',
 ];
+
+/* ------------------------------------------------------------------
+   Module-level Chrome ping interval (replaces window.__tts_ping_interval)
+   ------------------------------------------------------------------ */
+
+let chromePingInterval: ReturnType<typeof setInterval> | null = null;
+
+function startChromePing(): void {
+  stopChromePing();
+  // Chrome pauses SpeechSynthesis after ~15s; a periodic pause/resume keeps it alive.
+  chromePingInterval = setInterval(() => {
+    if (typeof window !== 'undefined' && window.speechSynthesis.speaking) {
+      window.speechSynthesis.pause();
+      window.speechSynthesis.resume();
+    }
+  }, 10000);
+}
+
+function stopChromePing(): void {
+  if (chromePingInterval !== null) {
+    clearInterval(chromePingInterval);
+    chromePingInterval = null;
+  }
+}
 
 /* ------------------------------------------------------------------
    Helpers
@@ -171,6 +203,11 @@ export function useSpeechOutput(): UseSpeechOutputReturn {
   const speakingIndexRef = useRef(0);
   const cancelledRef = useRef(false);
 
+  // isReady = voices loaded
+  const isReady = availableVoices.length > 0;
+  // enabled = autoSpeak is on
+  const enabled = settings.autoSpeak;
+
   /* ---- Load voices ---- */
 
   useEffect(() => {
@@ -178,7 +215,7 @@ export function useSpeechOutput(): UseSpeechOutputReturn {
 
     const synth = window.speechSynthesis;
 
-    const loadVoices = () => {
+    const loadVoices = (): void => {
       const voices = synth.getVoices();
       if (voices.length > 0) {
         setAvailableVoices(voices);
@@ -225,6 +262,7 @@ export function useSpeechOutput(): UseSpeechOutputReturn {
       setIsSpeaking(false);
       setCurrentSentence(0);
       setTotalSentences(0);
+      stopChromePing();
       return;
     }
 
@@ -263,7 +301,7 @@ export function useSpeechOutput(): UseSpeechOutputReturn {
           speakNextInQueue();
         };
 
-        utterance.onerror = (ev) => {
+        utterance.onerror = (ev: SpeechSynthesisErrorEvent) => {
           if (ev.error === 'canceled' || ev.error === 'interrupted') return;
           console.error('Utterance error:', ev.error);
           speakingIndexRef.current = i + 1;
@@ -280,12 +318,15 @@ export function useSpeechOutput(): UseSpeechOutputReturn {
       setIsSpeaking(true);
       setIsPaused(false);
 
+      // Start Chrome keep-alive ping
+      startChromePing();
+
       window.speechSynthesis.speak(queue[0]);
     },
     [isSupported, selectedVoice, settings, speakNextInQueue],
   );
 
-  /* ---- stop / pause / resume ---- */
+  /* ---- stop / pause / resume / skipToNext ---- */
 
   const stop = useCallback(() => {
     if (!isSupported) return;
@@ -297,11 +338,7 @@ export function useSpeechOutput(): UseSpeechOutputReturn {
     setIsPaused(false);
     setCurrentSentence(0);
     setTotalSentences(0);
-    // Clear Chrome ping interval
-    if ((window as any).__tts_ping_interval) {
-      clearInterval((window as any).__tts_ping_interval);
-      (window as any).__tts_ping_interval = null;
-    }
+    stopChromePing();
     setTimeout(() => { cancelledRef.current = false; }, 0);
   }, [isSupported]);
 
@@ -316,6 +353,21 @@ export function useSpeechOutput(): UseSpeechOutputReturn {
     window.speechSynthesis.resume();
     setIsPaused(false);
   }, [isSupported]);
+
+  const skipToNext = useCallback(() => {
+    if (!isSupported) return;
+    const queue = utteranceQueueRef.current;
+    const nextIdx = speakingIndexRef.current + 1;
+    if (nextIdx >= queue.length) {
+      stop();
+      return;
+    }
+    // Cancel current utterance — this triggers onend which calls speakNextInQueue
+    window.speechSynthesis.cancel();
+    speakingIndexRef.current = nextIdx;
+    setCurrentSentence(nextIdx + 1);
+    window.speechSynthesis.speak(queue[nextIdx]);
+  }, [isSupported, stop]);
 
   /* ---- voice / rate / pitch / volume setters ---- */
 
@@ -349,6 +401,7 @@ export function useSpeechOutput(): UseSpeechOutputReturn {
       if (isSupported) {
         cancelledRef.current = true;
         window.speechSynthesis.cancel();
+        stopChromePing();
       }
     };
   }, [isSupported]);
@@ -358,9 +411,12 @@ export function useSpeechOutput(): UseSpeechOutputReturn {
     stop,
     pause,
     resume,
+    skipToNext,
     isSpeaking,
     isPaused,
     isSupported,
+    isReady,
+    enabled,
     selectedVoice,
     availableVoices,
     setVoice,

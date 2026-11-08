@@ -31,6 +31,7 @@ export interface StressUpdate {
   depression_risk: number;
   overall_risk: number;
   emotions: Record<string, number>;
+  dominant_emotion?: string;
   voice_freq: number;
   voice_amplitude: number;
   micro_expression_pct: number;

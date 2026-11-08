@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, Activity, BookHeart, FileText } from 'lucide-react';
 import WellnessScore from './components/WellnessScore';
 import ComparisonCards from './components/ComparisonCards';
 import TrendChart from './components/TrendChart';
@@ -109,10 +109,10 @@ function Dashboard(): React.ReactElement {
   }, []);
 
   const quickActions = [
-    { emoji: '🧘', label: 'Start Session', path: '/session' },
-    { emoji: '💬', label: 'Talk to AI', path: '/consultation' },
-    { emoji: '🎵', label: 'Music & Games', path: '/activities' },
-    { emoji: '📊', label: 'Journey', path: '/reports' },
+    { Icon: Activity, label: 'Start Session', path: '/session' },
+    { Icon: MessageCircle, label: 'Talk to AI', path: '/consultation' },
+    { Icon: BookHeart, label: 'Music & Games', path: '/activities' },
+    { Icon: FileText, label: 'Journey', path: '/reports' },
   ];
 
   return (
@@ -172,16 +172,17 @@ function Dashboard(): React.ReactElement {
       {/* Today's Mental Weather */}
       {recentSessions.length > 0 && (() => {
         const avgS = Math.round(recentSessions.reduce((s, r) => s + r.avgStress, 0) / recentSessions.length);
-        const w = avgS < 20 ? { emoji: '☀️', label: 'Calm', bg: 'var(--green-light)', color: '#1a8f5c' }
-          : avgS < 40 ? { emoji: '⛅', label: 'Mild', bg: '#e8f5e9', color: '#388e3c' }
-          : avgS < 60 ? { emoji: '☁️', label: 'Moderate', bg: 'var(--amber-light)', color: '#b97a1e' }
-          : avgS < 80 ? { emoji: '🌧️', label: 'Stormy', bg: 'var(--rose-light)', color: '#c0392b' }
-          : { emoji: '⛈️', label: 'Critical', bg: '#fde2e2', color: '#e74c3c' };
+        const w = avgS < 30 ? { emoji: '☀️', label: 'Sunny', bg: 'var(--green-light)', color: '#1a8f5c' }
+          : avgS < 50 ? { emoji: '⛅', label: 'Partly Cloudy', bg: '#e8f5e9', color: '#388e3c' }
+          : avgS < 70 ? { emoji: '☁️', label: 'Cloudy', bg: 'var(--amber-light)', color: '#b97a1e' }
+          : avgS < 85 ? { emoji: '🌧️', label: 'Rainy', bg: 'var(--rose-light)', color: '#c0392b' }
+          : { emoji: '⛈️', label: 'Thunderstorm', bg: '#fde2e2', color: '#e74c3c' };
         return (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
+            className="glass-card"
             style={{
               background: w.bg,
               borderRadius: 20,
@@ -192,7 +193,13 @@ function Dashboard(): React.ReactElement {
               gap: 16,
             }}
           >
-            <span style={{ fontSize: 36 }}>{w.emoji}</span>
+            <motion.span
+              style={{ fontSize: 36 }}
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ duration: 2, repeat: Infinity, repeatType: 'mirror', ease: 'easeInOut' }}
+            >
+              {w.emoji}
+            </motion.span>
             <div>
               <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 2 }}>Today&apos;s Mental Weather</p>
               <p style={{ fontSize: 22, fontWeight: 800, color: w.color, margin: 0 }}>
@@ -238,10 +245,10 @@ function Dashboard(): React.ReactElement {
               border: '1px solid var(--border)',
               transition: 'transform 0.2s, box-shadow 0.2s',
             }}
-            whileHover={{ y: -3, boxShadow: 'var(--shadow-md)' }}
+            whileHover={{ scale: 1.02, boxShadow: 'var(--shadow-md)' }}
             whileTap={{ scale: 0.97 }}
           >
-            <span style={{ fontSize: '2rem' }}>{action.emoji}</span>
+            <action.Icon style={{ width: 28, height: 28, color: 'var(--primary)' }} />
             <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{action.label}</span>
           </motion.button>
         ))}

@@ -12,21 +12,55 @@
 ║   ██║ ╚═╝ ██║██║██║ ╚████║██████╔╝   ██║   ██║  ██║██║  ██║ ║
 ║   ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═════╝    ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝ ║
 ║                        AI v4.0                               ║
-║         Production-Grade Stress Detection Platform           ║
+║         Real-Time Stress Detection & AI Consultation         ║
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝
 ```
 
-**Real-time multi-modal stress analysis using facial expression,
-voice patterns, and temporal sequence modeling.**
+**Real-time mental health stress detection combining facial emotion recognition,
+AI consultation, and honest multimodal research.**
 
 [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)]()
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.111-green.svg)]()
 [![React](https://img.shields.io/badge/React-18.3-cyan.svg)]()
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.3-red.svg)]()
+[![Groq](https://img.shields.io/badge/Groq-LLaMA_3.3_70B-orange.svg)]()
 [![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg)]()
 
 </div>
+
+---
+
+## 🔍 What Is Real vs. What Is Simulated
+
+> **Honesty first.** This project clearly separates working components from research-stage components.
+
+### ✅ Real and Working
+
+| Component | Details |
+|-----------|---------|
+| **Full-Stack Web App** | React 18 + TypeScript frontend, FastAPI backend, PostgreSQL, Redis, JWT auth, Google OAuth2, OTP email verification |
+| **AI Chatbot** | Groq LLaMA 3.3 70B — every response is generated in real-time via Groq API. The AI receives live biometric readings with every message to understand the user's physical state, not just their words |
+| **Facial Emotion Model** | ViT-Base fine-tuned on FER2013 (7 emotion classes). Real PyTorch training pipeline with reproducible results, confusion matrix, classification report, and ROC AUC scores |
+| **Safety Filter** | Deterministic pure-Python crisis detection — runs before every AI call, cannot be bypassed. Detects crisis keywords, harm indicators, and dangerous biometric combinations |
+| **WebSocket Streaming** | Real-time bidirectional communication for both analysis and consultation |
+
+### 🔬 Architecturally Defined — Not Yet Trained
+
+| Component | Why Not Trained | Dataset Needed |
+|-----------|----------------|----------------|
+| **Voice Stress Model** (Raw Spectrogram CNN) | Requires restricted dataset | DAIC-WOZ (AVEC challenge access) |
+| **Temporal Sequence Model** (Mamba SSM) | Requires academic license | IEMOCAP (USC license) |
+
+When these models are not available, the app runs in **demo mode** for voice and temporal modalities — generating realistic but synthetic data with a clear "Demo Mode" indicator in the UI. This is never presented as real model output.
+
+### 📊 Model Selection Research
+
+A systematic comparison of 30 multi-modal model combinations was conducted and documented. The top-ranked combination:
+
+| Facial | Voice | Temporal | Combined F1 |
+|--------|-------|----------|:-----------:|
+| ViT-Base | Raw Spectrogram CNN | Mamba SSM | **79.5%** |
 
 ---
 
@@ -41,8 +75,10 @@ voice patterns, and temporal sequence modeling.**
 ## Tech Stack
 
 ```
-React 18 + TypeScript + FastAPI + PostgreSQL +
-Redis + Groq LLaMA 3.3 70B + Docker
+React 18 + TypeScript + Vite + Tailwind CSS + Framer Motion
+FastAPI + PostgreSQL + Redis + WebSockets
+Groq LLaMA 3.3 70B (AI) + PyTorch + HuggingFace (ML)
+Docker Compose + NGINX
 ```
 
 ## Quick Start
@@ -51,76 +87,12 @@ Redis + Groq LLaMA 3.3 70B + Docker
 git clone https://github.com/YOUR_USERNAME/mindtrack-ai
 cd mindtrack-ai
 cp backend/.env.example backend/.env
-# Fill in your API keys in backend/.env
+# Fill in your GROQ_API_KEY in backend/.env (free at console.groq.com)
 docker-compose up --build
 # Open http://localhost:80
 ```
 
-> **Free Deployment?** See [DEPLOY.md](./DEPLOY.md) for a full guide to deploy on Vercel + Railway + Supabase — all free tier.
-
----
-
-## Architecture Overview
-
-```
-┌───────────────────────────────────────────────────────────────┐
-│                         NGINX (port 80)                       │
-│                    Reverse Proxy + Rate Limiting               │
-├───────────────┬───────────────────────────────┬───────────────┤
-│               │                               │               │
-│  ┌────────────▼─────────┐  ┌──────────────────▼────────────┐ │
-│  │   React Frontend     │  │      FastAPI Backend          │ │
-│  │   (Vite + TS)        │  │      (Uvicorn ASGI)           │ │
-│  │   Port 3000          │  │      Port 8000                │ │
-│  │                      │  │                               │ │
-│  │  • Auth Pages        │  │  • REST API + WebSocket       │ │
-│  │  • Live Session      │  │  • JWT/OTP/OAuth Auth         │ │
-│  │  • Dashboard         │  │  • ML Inference Pipeline      │ │
-│  │  • Reports           │  │  • Session Management         │ │
-│  │  • Benchmarks        │  │                               │ │
-│  │  • Dataset Browser   │  │  ML Models:                   │ │
-│  └──────────────────────┘  │  ├─ ViT (Facial)              │ │
-│                            │  ├─ CNN (Voice/MFCC)           │ │
-│                            │  ├─ Mamba SSM (Temporal)       │ │
-│                            │  └─ Fusion Engine              │ │
-│                            └───────────┬───────────────────┘ │
-│                                        │                      │
-│              ┌─────────────────────────┼──────────────┐      │
-│              │                         │              │      │
-│     ┌────────▼────────┐    ┌───────────▼──────────┐   │      │
-│     │   PostgreSQL    │    │       Redis          │   │      │
-│     │   Port 5432     │    │    Port 6379         │   │      │
-│     │                 │    │                      │   │      │
-│     │  • Users        │    │  • OTP Codes (TTL)   │   │      │
-│     │  • Sessions     │    │  • Session Cache     │   │      │
-│     │  • Readings     │    │  • Refresh Tokens    │   │      │
-│     │  • Reports      │    │                      │   │      │
-│     └─────────────────┘    └──────────────────────┘   │      │
-│              └─────────────────────────────────────────┘      │
-└───────────────────────────────────────────────────────────────┘
-```
-
-## Prerequisites
-
-- **Python** 3.11+
-- **Node.js** 20+
-- **Docker** & **Docker Compose** (for containerized deployment)
-- **CUDA** (optional, for GPU-accelerated inference)
-
-## Quick Start (Docker)
-
-```bash
-# 1. Clone and configure
-git clone <repo-url> mindtrack-ai && cd mindtrack-ai
-cp backend/.env.example backend/.env
-# Edit backend/.env with your credentials
-
-# 2. Build and start everything
-docker-compose up --build
-
-# 3. Access the application
-open http://localhost:80
-```
+> **Free Deployment?** See [DEPLOY.md](./DEPLOY.md) for Vercel + Railway + Supabase — all free tier.
 
 ## Manual Setup
 
@@ -128,17 +100,11 @@ open http://localhost:80
 
 ```bash
 cd backend
-
-# Create virtual environment
 python -m venv venv
-source venv/bin/activate  # or venv\Scripts\activate on Windows
-
-# Install dependencies
+source venv/bin/activate
 pip install -r requirements.txt
-
-# Configure environment
 cp .env.example .env
-# Edit .env with your settings
+# Edit .env with your GROQ_API_KEY and database credentials
 
 # Start PostgreSQL and Redis (or use Docker for just these)
 docker-compose up postgres redis -d
@@ -154,155 +120,115 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
 ```bash
 cd frontend
-
-# Install dependencies
 npm install
-
-# Start development server
 npm run dev
 # → http://localhost:3000
 ```
 
-## Demo Login
+## Training the Facial Emotion Model
 
-| Field    | Value            |
-|----------|------------------|
-| Email    | demo@mindtrack.ai |
-| Password | Demo@1234        |
-| OTP      | Shown on screen / printed to server console |
-| Role     | Researcher / Admin (full access) |
-
-## Dataset Downloads
-
-The platform uses 5 research datasets. Some require academic licenses:
-
-| Dataset  | Auto-Download | Size   | Source |
-|----------|:------------:|--------|--------|
-| FER2013  | ✅ Kaggle API | 96 MB  | `kaggle datasets download -d msambare/fer2013` |
-| AffectNet | ❌ Manual    | 120 GB | [mohammadmahoor.com/affectnet](http://mohammadmahoor.com/affectnet/) |
-| DAIC-WOZ | ❌ Manual     | 35 GB  | [dcapswoz.ict.usc.edu](https://dcapswoz.ict.usc.edu/) |
-| RAVDESS  | ✅ Auto       | 24 GB  | [zenodo.org/record/1188976](https://zenodo.org/record/1188976) |
-| IEMOCAP  | ❌ Manual     | 32 GB  | [sail.usc.edu/iemocap](https://sail.usc.edu/iemocap/) |
-
-```bash
-# Download available datasets
-python ml_training/data_loader.py --datasets all
-```
-
-## ML Model Training
-
-Train models in this order:
+The training pipeline is designed to run on Google Colab free tier (T4 GPU):
 
 ```bash
 cd ml_training
 
-# 1. Download datasets
-python data_loader.py
+# Option 1: Run locally with GPU
+python train_facial_vit.py
 
-# 2. Train facial emotion model (ViT)
-python train_facial.py --epochs 50 --batch-size 32
-
-# 3. Train voice stress model (CNN)
-python train_voice.py --epochs 80 --batch-size 32
-
-# 4. Train temporal model (Mamba SSM)
-python train_temporal.py --epochs 60 --batch-size 64
-
-# 5. Run benchmarks
-python evaluate_models.py
+# Option 2: Use the Colab notebook
+# Open ml_training/colab_train.ipynb in Google Colab
 ```
 
-**Note:** If models are not trained, the backend runs in **demo mode** and returns realistic mock analysis data.
+### What the training produces
 
-## Model Performance
+- `data/pretrained/vit_fer2013_best.pt` — trained model weights
+- `results/confusion_matrix.png` — 7×7 confusion matrix heatmap
+- `results/classification_report.json` — per-class metrics
+- `results/training_curves.png` — loss and F1 curves
+- `results/metrics_summary.json` — proof that training happened
 
-### Top 5 Model Combinations
+### Reproducing results
 
-| Rank | CNN (Facial) | MFCC (Voice) | Temporal | Combined F1 | AUC |
-|:----:|-------------|-------------|----------|:-----------:|:---:|
-| 1 | ViT-B/16 | Raw Spec CNN | Mamba SSM | **79.5%** | 0.842 |
-| 2 | ViT-B/16 | Spec CNN-2D | Mamba SSM | 76.2% | 0.821 |
-| 3 | ViT-B/16 | MFCC CNN-1D | S4 SSM | 72.8% | 0.798 |
-| 4 | ResNet-50 | Raw Spec CNN | Mamba SSM | 70.1% | 0.781 |
-| 5 | ResNet-50 | Spec CNN-2D | LSTM-2L | 68.4% | 0.763 |
+```bash
+cd ml_training
+python evaluate_saved_model.py --checkpoint ../data/pretrained/vit_fer2013_best.pt
+```
 
-### Key Findings
-
-- **Best**: ViT + Raw Spec CNN + Mamba SSM → **79.5% Combined F1**
-- **Raw Spec CNN vs MFCC CNN-1D**: +16.9 F1 improvement
-- **Mamba SSM vs Transformer**: +31.2 F1 improvement
-- **Standalone Transformer on IEMOCAP**: 48.3% — never use without pretraining
-
-## API Documentation
-
-Interactive API docs available at `http://localhost:8000/docs` when the backend is running.
-
-### Key Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/auth/register` | Register new user |
-| POST | `/auth/login` | Login with email/password |
-| POST | `/auth/verify-otp` | Verify OTP code |
-| POST | `/auth/refresh` | Refresh JWT token |
-| GET | `/auth/google` | Google OAuth2 redirect |
-| GET | `/users/me` | Get current user profile |
-| POST | `/sessions/start` | Start analysis session |
-| POST | `/sessions/{id}/stop` | Stop session |
-| WS | `/ws/session/{id}` | Real-time analysis WebSocket |
-| POST | `/consultation/start` | Start AI consultation |
-| WS | `/ws/consultation/{id}` | Live AI streaming chat |
-| POST | `/consultation/{id}/end` | End consultation session |
-| GET | `/consultation/{id}/history` | Get full chat history |
-| GET | `/reports/` | List all reports |
-| GET | `/reports/{id}` | Get report detail |
-| POST | `/reports/generate` | Generate AI report |
-| GET | `/datasets/` | List dataset info |
-| GET | `/health` | Health check |
+See [results/README.md](./results/README.md) for details on all output files.
 
 ## Environment Variables
 
-| Variable | Required | Default | Description |
-|----------|:--------:|---------|-------------|
-| `DATABASE_URL` | ✅ | — | PostgreSQL connection string |
-| `REDIS_URL` | ✅ | — | Redis connection string |
-| `SECRET_KEY` | ✅ | — | JWT signing key (256-bit) |
-| `ANTHROPIC_API_KEY` | ✅ | — | Anthropic Claude API key (live chatbot) |
-| `SMTP_HOST` | ❌ | smtp.gmail.com | Email SMTP host |
-| `SMTP_USER` | ❌ | — | SMTP username |
-| `SMTP_PASSWORD` | ❌ | — | SMTP app password |
-| `GOOGLE_CLIENT_ID` | ❌ | — | Google OAuth client ID |
-| `GOOGLE_CLIENT_SECRET` | ❌ | — | Google OAuth secret |
-| `HUGGINGFACE_TOKEN` | ❌ | — | HuggingFace API token |
-| `FRONTEND_URL` | ❌ | http://localhost:3000 | Frontend origin for CORS |
+| Variable | Required | Description |
+|----------|:--------:|-------------|
+| `GROQ_API_KEY` | ✅ | Groq API key — powers ALL AI features (free at [console.groq.com](https://console.groq.com)) |
+| `DATABASE_URL` | ✅ | PostgreSQL connection string |
+| `REDIS_URL` | ✅ | Redis connection string |
+| `SECRET_KEY` | ✅ | JWT signing key (`openssl rand -hex 32`) |
+| `SMTP_HOST` | ❌ | Email SMTP host (default: smtp.gmail.com) |
+| `SMTP_USER` | ❌ | SMTP username |
+| `SMTP_PASSWORD` | ❌ | SMTP app password |
+| `GOOGLE_CLIENT_ID` | ❌ | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | ❌ | Google OAuth secret |
+| `FRONTEND_URL` | ❌ | Frontend origin for CORS (default: http://localhost:3000) |
+| `REAL_MODEL_PATH` | ❌ | Path to trained ViT weights (auto-detected) |
+| `KAGGLE_USERNAME` | ❌ | Kaggle API username (training only) |
+| `KAGGLE_KEY` | ❌ | Kaggle API key (training only) |
 
-### Getting your Anthropic API Key
+### Getting your Groq API Key
 
-1. Go to [console.anthropic.com](https://console.anthropic.com)
-2. Create an account
+1. Go to [console.groq.com](https://console.groq.com)
+2. Create a free account
 3. Navigate to **API Keys**
 4. Create a new key
-5. Add to your `.env` file as `ANTHROPIC_API_KEY=sk-ant-...`
+5. Add to your `.env` file as `GROQ_API_KEY=gsk_...`
 
-The live AI chatbot generates every response in real-time using Claude. Without this key, the chatbot will return fallback messages.
+Groq provides free API access with generous rate limits. The AI chatbot uses `llama-3.3-70b-versatile` for all responses.
 
-## Troubleshooting
+## Architecture
 
-### Camera Permissions
-- Chrome requires HTTPS for camera access (except localhost)
-- If denied, the app shows a placeholder and uses demo data
+```
+┌───────────────────────────────────────────────────────────────┐
+│                         NGINX (port 80)                       │
+│                    Reverse Proxy + Rate Limiting               │
+├───────────────┬───────────────────────────────┬───────────────┤
+│               │                               │               │
+│  ┌────────────▼─────────┐  ┌──────────────────▼────────────┐ │
+│  │   React Frontend     │  │      FastAPI Backend          │ │
+│  │   (Vite + TS)        │  │      (Uvicorn ASGI)           │ │
+│  │   Port 3000          │  │      Port 8000                │ │
+│  │                      │  │                               │ │
+│  │  • Auth Pages        │  │  • REST API + WebSocket       │ │
+│  │  • Live Session      │  │  • JWT/OTP/OAuth Auth         │ │
+│  │  • AI Consultation   │  │  • Groq LLM Integration      │ │
+│  │  • Dashboard         │  │  • Safety Filter (pre-AI)     │ │
+│  │  • Reports           │  │  • ML Inference Pipeline      │ │
+│  └──────────────────────┘  │                               │ │
+│                            │  ML Models:                   │ │
+│                            │  ├─ ViT (Facial) ✅ REAL      │ │
+│                            │  ├─ CNN (Voice) 🔬 PLANNED   │ │
+│                            │  ├─ Mamba SSM (Temporal) 🔬  │ │
+│                            │  └─ Fusion Engine             │ │
+│                            └───────────┬───────────────────┘ │
+│                                        │                      │
+│              ┌─────────────────────────┼──────────────┐      │
+│     ┌────────▼────────┐    ┌───────────▼──────────┐   │      │
+│     │   PostgreSQL    │    │       Redis          │   │      │
+│     │   Port 5432     │    │    Port 6379         │   │      │
+│     │  • Users        │    │  • OTP Codes (TTL)   │   │      │
+│     │  • Sessions     │    │  • Session Cache     │   │      │
+│     │  • Readings     │    │  • Refresh Tokens    │   │      │
+│     │  • Reports      │    │                      │   │      │
+│     └─────────────────┘    └──────────────────────┘   │      │
+│              └─────────────────────────────────────────┘      │
+└───────────────────────────────────────────────────────────────┘
+```
 
-### CUDA Out of Memory
-- Models fall back to CPU automatically when CUDA is unavailable
-- Reduce batch size in training scripts if GPU OOM occurs
+## Honest Limitations
 
-### Dataset Paths
-- All datasets expected in `data/datasets/<name>/`
-- Run `python data_loader.py` to check status and create directories
-
-### WebSocket Connection
-- Uses exponential backoff reconnection (up to 10 attempts)
-- Check CORS and proxy settings if connections fail
+1. **Voice and temporal models are not yet trained.** They require restricted datasets (DAIC-WOZ, IEMOCAP) that need academic licenses. The app clearly indicates demo mode when these are unavailable.
+2. **Facial emotion recognition has known limitations.** FER2013 is a noisy dataset with ~65% human agreement. Our model achieves competitive results but emotion recognition from faces alone is not a clinical tool.
+3. **This is a research project, not a medical device.** Nothing in this app should be used for clinical diagnosis. The safety filter catches crisis situations and provides emergency resources, but it is not a substitute for professional help.
+4. **Groq API dependency.** The chatbot requires an active Groq API key. Without it, the consultation feature will not work (but the rest of the app functions normally).
 
 ## Project Structure
 
@@ -310,21 +236,23 @@ The live AI chatbot generates every response in real-time using Claude. Without 
 mindtrack-ai/
 ├── backend/              # FastAPI backend (Python)
 │   ├── app/
-│   │   ├── api/          # Route handlers (auth, sessions, analysis, reports, users, datasets)
-│   │   ├── core/         # Config, database, redis, security, websocket
+│   │   ├── api/          # Route handlers (auth, sessions, analysis, consultation, reports, users)
+│   │   ├── core/         # Config, database, redis, security, websocket, ai_engine, safety_filter
 │   │   ├── db/           # SQLAlchemy ORM models
-│   │   ├── models/       # ML models (facial, voice, temporal, fusion)
+│   │   ├── models/       # ML models (facial_inference, facial_model, fusion, model_loader)
 │   │   └── schemas/      # Pydantic request/response schemas
 │   ├── main.py           # FastAPI app entry point
 │   └── requirements.txt
 ├── frontend/             # React + TypeScript (Vite)
 │   └── src/
 │       ├── api/          # Axios client with JWT interceptors
-│       ├── hooks/        # Custom hooks (camera, mic, websocket, session)
+│       ├── components/   # Shared components (ChatInputBar, VoiceStatusIndicator, etc.)
+│       ├── hooks/        # Custom hooks (camera, mic, websocket, session, speechOutput)
 │       ├── pages/        # All page components
 │       ├── store/        # Zustand state management
 │       └── styles/       # Tailwind CSS + design system
-├── ml_training/          # Training scripts
+├── ml_training/          # Training scripts (train_facial_vit.py, evaluate_saved_model.py, colab_train.ipynb)
+├── results/              # Training output artifacts (confusion matrix, metrics, curves)
 ├── data/                 # Datasets + pretrained weights
 ├── docker-compose.yml    # Full-stack Docker setup
 ├── nginx/                # Reverse proxy config
@@ -334,16 +262,15 @@ mindtrack-ai/
 ## Citations
 
 - **FER2013**: Goodfellow, I. J. et al. "Challenges in representation learning: A report on three machine learning contests." ICML 2013.
-- **AffectNet**: Mollahosseini, A. et al. "AffectNet: A Database for Facial Expression, Valence, and Arousal Computing in the Wild." IEEE TAC, 2019.
-- **DAIC-WOZ**: Gratch, J. et al. "The Distress Analysis Interview Corpus of Human and Computer Interviews." LREC, 2014.
-- **RAVDESS**: Livingstone, S. R. & Russo, F. A. "The Ryerson Audio-Visual Database of Emotional Speech and Song." PLoS ONE, 2018.
-- **IEMOCAP**: Busso, C. et al. "IEMOCAP: Interactive Emotional Dyadic Motion Capture Database." Language Resources & Evaluation, 2008.
 - **ViT**: Dosovitskiy, A. et al. "An Image is Worth 16x16 Words." ICLR, 2021.
 - **Mamba**: Gu, A. & Dao, T. "Mamba: Linear-Time Sequence Modeling with Selective State Spaces." arXiv, 2023.
+- **DAIC-WOZ**: Gratch, J. et al. "The Distress Analysis Interview Corpus." LREC, 2014.
+- **IEMOCAP**: Busso, C. et al. "IEMOCAP: Interactive Emotional Dyadic Motion Capture Database." Language Resources & Evaluation, 2008.
 - **S4**: Gu, A. et al. "Efficiently Modeling Long Sequences with Structured State Spaces." ICLR, 2022.
 
 ---
 
 <div align="center">
-  <strong>MindTrack AI v4.0</strong> — Built with ❤️ for mental health research
+  <strong>MindTrack AI v4.0</strong> — Built with ❤️ for mental health research<br/>
+  <em>Powered by Groq • Real ML • Honest about what's real</em>
 </div>

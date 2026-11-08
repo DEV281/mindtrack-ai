@@ -334,10 +334,12 @@ function ConsultationRoom(): React.ReactElement {
 
     ws.onclose = () => {
       setConnected(false);
-      // Reconnect with exponential backoff
-      if (reconnectAttemptsRef.current < 5 && consultIdRef.current) {
+      // Reconnect with escalating delays: [1,2,4,8,16,30,30,30,30,30]s
+      const MAX_RECONNECT_ATTEMPTS = 10;
+      const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000, 30000, 30000, 30000, 30000, 30000];
+      if (reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS && consultIdRef.current) {
         setWsStatus('reconnecting');
-        const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 8000);
+        const delay = RECONNECT_DELAYS[Math.min(reconnectAttemptsRef.current, RECONNECT_DELAYS.length - 1)];
         reconnectAttemptsRef.current += 1;
         reconnectTimerRef.current = setTimeout(() => {
           if (consultIdRef.current) {
@@ -345,6 +347,8 @@ function ConsultationRoom(): React.ReactElement {
           }
         }, delay);
       } else if (!consultIdRef.current) {
+        setWsStatus('disconnected');
+      } else {
         setWsStatus('disconnected');
       }
     };
@@ -654,7 +658,7 @@ function ConsultationRoom(): React.ReactElement {
                   className="text-center text-xs py-1.5 font-medium"
                   style={{ background: 'rgba(233, 196, 106, 0.15)', color: '#e9c46a', borderBottom: '1px solid rgba(233, 196, 106, 0.2)' }}
                 >
-                  Reconnecting... 💙
+                  Reconnecting (attempt {reconnectAttemptsRef.current}/10)... 💙
                 </motion.div>
               )}
               {wsStatus === 'disconnected' && isActive && (
@@ -663,7 +667,7 @@ function ConsultationRoom(): React.ReactElement {
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
                   className="text-center text-xs py-1.5 font-medium"
-                  style={{ background: 'rgba(183, 126, 181, 0.12)', color: '#b77eb5', borderBottom: '1px solid rgba(183, 126, 181, 0.2)' }}
+                  style={{ background: 'rgba(212, 130, 154, 0.12)', color: '#d4829a', borderBottom: '1px solid rgba(212, 130, 154, 0.2)' }}
                 >
                   Connection lost — trying to reconnect
                 </motion.div>
@@ -849,6 +853,19 @@ function ConsultationRoom(): React.ReactElement {
                             {MODE_LABELS[aiMode]?.emoji}
                           </span>
                         )}
+                        {msg.sender === 'ai' && stressUpdate?.dominant_emotion && (
+                          <span
+                            className="text-xs px-1.5 py-0.5 rounded-full"
+                            style={{
+                              background: 'var(--primary-light, #e8f0fe)',
+                              color: 'var(--primary, #5b9bd5)',
+                              fontSize: 10,
+                              fontWeight: 600,
+                            }}
+                          >
+                            {stressUpdate.dominant_emotion}
+                          </span>
+                        )}
                         <span className="text-xs text-text-muted">
                           {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
@@ -996,6 +1013,24 @@ function ConsultationRoom(): React.ReactElement {
 
             {/* Input Area */}
             <div className="border-t border-border p-4">
+              {/* Mental State Indicator Bar */}
+              {isActive && stressUpdate && (
+                <div
+                  style={{
+                    height: 6,
+                    borderRadius: 3,
+                    marginBottom: 8,
+                    background: stressUpdate.overall_risk < 30
+                      ? 'var(--green, #52b788)'
+                      : stressUpdate.overall_risk < 70
+                        ? 'var(--amber, #e9c46a)'
+                        : 'var(--rose, #d4829a)',
+                    transition: 'background 0.5s ease',
+                    opacity: 0.6,
+                  }}
+                  title={`Wellness: ${(100 - stressUpdate.overall_risk).toFixed(0)}%`}
+                />
+              )}
               {/* Voice Controls — shown when AI is speaking */}
               <VoiceControls
                 isSpeaking={isSpeaking}
