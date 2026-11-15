@@ -103,6 +103,7 @@ app.include_router(sessions.router, prefix="/api")
 app.include_router(reports.router, prefix="/api")
 app.include_router(consultation.router, prefix="/api")
 app.include_router(analysis.router)
+app.include_router(analysis.router, prefix="/api")
 
 
 @app.get("/health")
