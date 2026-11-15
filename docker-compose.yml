@@ -47,22 +47,14 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    env_file:
+      - ./backend/.env
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-mindtrack}:${POSTGRES_PASSWORD:-mindtrack_secret_2026}@postgres:5432/mindtrack
       REDIS_URL: redis://redis:6379
       SECRET_KEY: ${SECRET_KEY:-mindtrack-dev-secret-key-change-in-production-2026}
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
       REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-30}
-      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
-      SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_USER: ${SMTP_USER:-}
-      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:8000/auth/google/callback}
-      RECAPTCHA_SECRET_KEY: ${RECAPTCHA_SECRET_KEY:-}
-      HUGGINGFACE_TOKEN: ${HUGGINGFACE_TOKEN:-}
-      GROQ_API_KEY: ${GROQ_API_KEY:-}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
     volumes:
       - ./data:/app/data
