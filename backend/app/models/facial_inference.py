@@ -70,40 +70,19 @@ class FaceAnalyzer:
         try:
             import torch
             from torchvision import transforms
-            from transformers import ViTModel
+            from transformers import ViTForImageClassification
 
             self.device = "cuda" if torch.cuda.is_available() else "cpu"
             logger.info("Loading ViT model on device: %s", self.device)
 
-            # Build model architecture (must match training)
-            vit_base = ViTModel.from_pretrained(
+            # Build model architecture (must match training — ViTForImageClassification)
+            model = ViTForImageClassification.from_pretrained(
                 "google/vit-base-patch16-224",
-                add_pooling_layer=True,
+                num_labels=7,
+                ignore_mismatched_sizes=True,
             )
 
-            # Build classification head
-            import torch.nn as nn
-
-            class ViTClassifier(nn.Module):
-                def __init__(self, vit_backbone: nn.Module) -> None:
-                    super().__init__()
-                    self.vit = vit_backbone
-                    self.classifier = nn.Sequential(
-                        nn.Linear(768, 512),
-                        nn.GELU(),
-                        nn.Dropout(0.3),
-                        nn.Linear(512, 256),
-                        nn.GELU(),
-                        nn.Dropout(0.2),
-                        nn.Linear(256, 7),
-                    )
-
-                def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
-                    outputs = self.vit(pixel_values=pixel_values)
-                    pooled = outputs.pooler_output
-                    return self.classifier(pooled)
-
-            model = ViTClassifier(vit_base)
+            # Load trained weights
             checkpoint = torch.load(self.model_path, map_location=self.device, weights_only=False)
 
             if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
@@ -280,7 +259,8 @@ class FaceAnalyzer:
 
         # Run inference
         with torch.no_grad():
-            logits = self.model(tensor)
+            output = self.model(pixel_values=tensor)
+            logits = output.logits
             probabilities = torch.nn.functional.softmax(logits, dim=1)
             probs = probabilities.cpu().numpy()[0]
 
