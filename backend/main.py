@@ -84,6 +84,7 @@ allowed_origins = [
     "http://localhost:5173",
     "http://localhost:80",
     "https://mindtrack-ai.vercel.app",
+    "https://mindtrack-frontend.onrender.com",
     os.environ.get("FRONTEND_URL", ""),
 ]
 

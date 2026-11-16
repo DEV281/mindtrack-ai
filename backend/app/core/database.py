@@ -13,6 +13,12 @@ settings = get_settings()
 _connect_args = {}
 _db_url = settings.DATABASE_URL
 
+# Render / Heroku give postgres:// but SQLAlchemy async needs postgresql+asyncpg://
+if _db_url.startswith("postgres://"):
+    _db_url = _db_url.replace("postgres://", "postgresql+asyncpg://", 1)
+elif _db_url.startswith("postgresql://"):
+    _db_url = _db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
 # Strip query params that asyncpg doesn't understand (e.g. ?pgbouncer=true)
 if "?" in _db_url:
     _db_url = _db_url.split("?")[0]
