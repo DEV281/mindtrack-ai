@@ -4,4 +4,4 @@ Disallow: /api/
 Disallow: /docs
 Disallow: /health
 
-Sitemap: https://mindtrack-frontend.onrender.com/sitemap.xml
+Sitemap: https://mindtrack-ai-eight.vercel.app/sitemap.xml

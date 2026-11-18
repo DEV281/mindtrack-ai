@@ -10,11 +10,8 @@ export default defineConfig({
       generateRobotsTxt: true,
       dynamicRoutes: [
         '/',
-        '/login',
-        '/register',
         '/privacy',
-        '/terms',
-        '/about'
+        '/terms'
       ]
     })
   ],
