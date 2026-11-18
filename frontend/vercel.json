@@ -4,7 +4,7 @@
   "outputDirectory": "dist",
   "installCommand": "npm ci",
   "rewrites": [
-    { "source": "/((?!googleaf0d232df2470cb8\\.html|robots\\.txt|sitemap\\.xml|assets/).*)", "destination": "/index.html" }
+    { "source": "/((?!google[0-9a-f]+\\.html|robots\\.txt|sitemap\\.xml|assets/).*)", "destination": "/index.html" }
   ],
   "headers": [
     {
