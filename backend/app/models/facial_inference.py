@@ -70,19 +70,18 @@ class FaceAnalyzer:
         try:
             import torch
             from torchvision import transforms
-            from transformers import ViTForImageClassification
+            from transformers import ViTForImageClassification, ViTConfig
 
             self.device = "cuda" if torch.cuda.is_available() else "cpu"
             logger.info("Loading ViT model on device: %s", self.device)
 
-            # Build model architecture (must match training — ViTForImageClassification)
-            model = ViTForImageClassification.from_pretrained(
-                "google/vit-base-patch16-224",
-                num_labels=7,
-                ignore_mismatched_sizes=True,
-            )
+            # Build model architecture from config only (no HuggingFace download needed
+            # since we load our own fully-trained weights below)
+            config = ViTConfig.from_pretrained("google/vit-base-patch16-224")
+            config.num_labels = 7
+            model = ViTForImageClassification(config)
 
-            # Load trained weights
+            # Load our trained weights
             checkpoint = torch.load(self.model_path, map_location=self.device, weights_only=False)
 
             if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
@@ -120,11 +119,25 @@ class FaceAnalyzer:
         """Load OpenCV Haar cascade for face detection."""
         try:
             import cv2
+            # Try to find CascadeClassifier (OpenCV 4.x has it at top level,
+            # OpenCV 5.x headless may not have it at all)
+            CascadeClassifier = getattr(cv2, "CascadeClassifier", None)
+            if CascadeClassifier is None:
+                # Try cv2.objdetect for OpenCV 5.x full builds
+                objdetect = getattr(cv2, "objdetect", None)
+                if objdetect is not None:
+                    CascadeClassifier = getattr(objdetect, "CascadeClassifier", None)
+            if CascadeClassifier is None:
+                logger.info("CascadeClassifier not available (OpenCV headless). Face detection disabled; full-frame analysis will be used.")
+                self.face_cascade = None
+                return
             cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
-            self.face_cascade = cv2.CascadeClassifier(cascade_path)
+            self.face_cascade = CascadeClassifier(cascade_path)
             if self.face_cascade.empty():
                 logger.warning("Face cascade classifier failed to load.")
                 self.face_cascade = None
+            else:
+                logger.info("Face cascade loaded successfully.")
         except ImportError:
             logger.warning("OpenCV not available. Face detection disabled.")
             self.face_cascade = None
